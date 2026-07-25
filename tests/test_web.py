@@ -198,6 +198,8 @@ def test_unknown_session_404(client: TestClient) -> None:
         "/hunts?sort=net&dir=asc",
         "/sessions?sort=net&dir=desc",
         "/dashboard?ysort=won&ydir=asc&bsort=bet&bdir=desc",
+        "/dashboard?date_from=2024-01-01&date_to=2024-12-31",
+        "/dashboard?date_from=2024-01-01",
         "/hunts/1?sort=win&dir=asc",
         # New log filters.
         "/log?notable=1",
@@ -285,6 +287,20 @@ def test_extra_exports_are_csv(client: TestClient, path: str) -> None:
     resp = client.get(path)
     assert resp.status_code == 200
     assert "text/csv" in resp.headers["content-type"]
+
+
+def test_dashboard_shows_the_provenance_split(client: TestClient) -> None:
+    resp = client.get("/dashboard")
+    assert "Bought vs natural" in resp.text
+    assert "Unknown" in resp.text  # imported rows must be represented, not hidden
+
+
+def test_dashboard_date_filter_narrows_the_totals(client: TestClient) -> None:
+    all_time = client.get("/dashboard").text
+    scoped = client.get("/dashboard", params={"date_from": "2099-01-01"}).text
+    assert all_time != scoped
+    # A future-only window matches nothing, so the headline count collapses.
+    assert ">0<" in scoped
 
 
 def test_adding_a_bought_bonus_records_cost_and_return(client: TestClient) -> None:
