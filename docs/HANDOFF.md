@@ -24,7 +24,7 @@ and the from-empty Postgres migration.
 
 ## Built surfaces (v1 scope — all done)
 
-Add-bonus (phone-first hot path, live multiplier, alias-corrected), Log
+Add-bonus (fast-entry hot path, live multiplier, alias-corrected), Log
 (search/filter/paginate), Dashboard (counts, total, mean/median/best X, distribution
 bands, by-year, by-bet), Game stats, Hunt mode (open/add/close, cost/net/ROI), Sessions
 (deposit/cashout/net/running total), CSV export, `/healthz`.
@@ -95,7 +95,6 @@ uncovered spelling variants. Mean X ≈ 118 (main-log-only ≈ 116, matching the
 
 **Platform**
 - Forward-auth cutover when that middleware exists — app needs only a proxy label, no code.
-- PWA / offline niceties for one-handed phone entry.
 
 **Nice-to-haves**
 - Alias-gap backfill/repair tooling; a `--dry-run` import mode; import-summary diff

@@ -13,7 +13,7 @@ project chat alongside this file — the importer needs the real thing.
 | **Scope** | Full replacement for the spreadsheet — bonus entry, hunt mode, session tracking, stats |
 | **Storage** | Postgres (chosen so the volume can live on network storage without SQLite's NFS locking problems) |
 | **Deploy** | Docker, self-hosted on a private network |
-| **Suggested stack** | FastAPI + SQLAlchemy + Alembic, server-rendered Jinja templates with HTMX. No JS build step, small image, works well on a phone during actual play. Not binding — swap if the project's conventions say otherwise. |
+| **Suggested stack** | FastAPI + SQLAlchemy + Alembic, server-rendered Jinja templates with HTMX. No JS build step, small image. Not binding — swap if the project's conventions say otherwise. |
 
 ---
 
@@ -209,7 +209,7 @@ Order of operations:
 ## App surface for v1
 
 - **Dashboard** — headline counts, total bonus winnings, mean/median X, X-distribution bands, by-year and by-bet-size breakdowns.
-- **Add bonus** — the hot path. Game autocomplete backed by `game` + `game_alias`, bet defaulting to last used, X shown live as you type the win. Should be usable one-handed on a phone.
+- **Add bonus** — the hot path. Game autocomplete backed by `game` + `game_alias`, bet defaulting to last used, X shown live as you type the win. Should be fast to use repeatedly, with minimal keystrokes.
 - **Log** — searchable, filterable by game / date range / bet / X band.
 - **Game stats** — count, total win, mean/best/worst X, first and last played, per game.
 - **Hunt mode** — open a hunt with a start balance, add bonuses to it as they're opened, close with an end balance and a convention, see cost / net / ROI.

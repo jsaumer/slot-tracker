@@ -143,7 +143,7 @@ interpreted. It is not shipped in the image and has no entry point — run
 
 Build in this order — each should be usable before starting the next.
 
-1. **Add bonus** — the hot path, used one-handed on a phone during play. Minimal fields, game
+1. **Add bonus** — the hot path, used repeatedly during play. Minimal fields, game
    autocomplete off `game` + `game_alias`, bet defaulting to last used, live multiplier as the win
    is typed.
 2. **Log** — searchable, filterable by game / date range / bet / multiplier band.

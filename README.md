@@ -1,7 +1,7 @@
 # slot-tracker
 
-A self-hosted web app for tracking slot bonuses, bonus hunts, and play sessions, designed to be
-usable one-handed on a phone during play.
+A self-hosted web app for tracking slot bonuses, bonus hunts, and play sessions, with fast entry as
+the primary design goal.
 
 Server-rendered Python. No JavaScript build step, no frontend framework, no CDN dependencies.
 
@@ -14,7 +14,7 @@ Server-rendered Python. No JavaScript build step, no frontend framework, no CDN 
 
 | Surface | What it does |
 |---|---|
-| **Add bonus** | The hot path, designed for one-handed phone use. Game autocomplete, bet defaulting to the last used value, live multiplier as you type the win, and typo correction via an alias table. |
+| **Add bonus** | The hot path, optimized for minimal keystrokes. Game autocomplete, bet defaulting to the last used value, live multiplier as you type the win, and typo correction via an alias table. |
 | **Log** | Search by game or notes; filter by date range, bet, multiplier band, notable, has-replay, or suspect date. Click any column to sort. Inline edit and delete. Summary aggregates for the current filter. |
 | **Dashboard** | Headline counts, total winnings, mean/median/best multiplier, distribution bands, and by-year / by-bet-size breakdowns. |
 | **Game stats** | Per-game count, total win, mean/best/worst multiplier, first and last played. Searchable, sortable, paginated, with a detail page per game. Includes tools to merge duplicate games and manage spelling aliases. |

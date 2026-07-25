@@ -1,4 +1,4 @@
-/* slot-tracker — phone-first, dark. Vendored, no CDN. */
+/* slot-tracker — dark, fluid width. Vendored, no CDN. */
 :root {
   --bg: #14161a;
   --surface: #1d2026;
@@ -58,7 +58,7 @@ h2 { font-size: 1.1rem; margin: 0 0 10px; }
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
 
-/* Forms — big touch targets for one-handed phone use */
+/* Forms — generously sized controls for fast, repeated entry */
 form.stack { display: flex; flex-direction: column; gap: var(--gap); }
 label { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
 input, select, textarea {
