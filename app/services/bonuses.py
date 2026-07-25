@@ -43,10 +43,9 @@ def update_bonus(
     the alias table, exactly as on entry, so a corrected spelling still lands on
     the right game.
 
-    Note: editing a row imported from the workbook (``import_ref`` non-null) is
-    overwritten by a subsequent ``slot-tracker-import`` re-run, which rewrites
-    game/date/bet/win/notes/replay/notable from the source. App-entered rows
-    (``import_ref`` NULL) are never touched by the importer. See loader.py.
+    Note: editing a row imported from a workbook (``import_ref`` non-null) would be
+    overwritten by a re-import, which rewrites game/date/bet/win/notes/replay/notable
+    from the source. App-entered rows (``import_ref`` NULL) are never touched.
     """
     bonus = session.get(Bonus, bonus_id)
     if bonus is None:

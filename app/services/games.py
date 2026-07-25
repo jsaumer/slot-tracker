@@ -10,9 +10,9 @@ from typing import Any
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from app.importer.normalize import normalize_name
 from app.models import Bonus, Game, GameAlias
 from app.services.aggregate import as_decimal
+from app.services.naming import normalize_name
 from app.services.sorting import Sort, order_by
 
 

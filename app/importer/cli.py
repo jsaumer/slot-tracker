@@ -1,8 +1,12 @@
-"""``slot-tracker-import`` console entry point.
+"""Importer entry point — development use only.
 
-Production invokes this via ``docker exec … slot-tracker-import /import/Slots.ods``.
+No console script is installed and this module is not shipped in the container
+image. Run it from a checkout against a configured ``DATABASE_URL``:
+
+    uv run python -m app.importer.cli path/to/workbook.ods
+
 Idempotent: safe to re-run against a populated database. Never writes to the
-source workbook (mounted read-only in production).
+source workbook.
 """
 
 from __future__ import annotations
@@ -18,10 +22,10 @@ from app.importer.reader import read_workbook
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="slot-tracker-import",
-        description="Import Slots.ods into the slot-tracker database (idempotent).",
+        prog="python -m app.importer.cli",
+        description="Import an .ods workbook into the slot-tracker database (idempotent).",
     )
-    parser.add_argument("workbook", help="path to Slots.ods")
+    parser.add_argument("workbook", help="path to the .ods workbook")
     args = parser.parse_args(argv)
 
     path = Path(args.workbook)

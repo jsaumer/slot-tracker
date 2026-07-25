@@ -1,7 +1,7 @@
 # slot-tracker
 
-A self-hosted web app for tracking slot bonuses, bonus hunts, and play sessions — built to replace a
-sprawling multi-sheet spreadsheet with something usable one-handed on a phone during play.
+A self-hosted web app for tracking slot bonuses, bonus hunts, and play sessions, designed to be
+usable one-handed on a phone during play.
 
 Server-rendered Python. No JavaScript build step, no frontend framework, no CDN dependencies.
 
@@ -64,26 +64,6 @@ fails loudly at startup if they're missing rather than coming up half-configured
 If a password is interpolated into `DATABASE_URL`, use a URL-safe value — hex is a good choice, since
 base64 output can contain `/`, `+`, and `=`, which break URL-form connection strings.
 
-## Importing an existing spreadsheet
-
-The project ships an importer for the `.ods` workbook it was built to replace. It reads the main
-bonus log and the per-hunt tabs as a **union** (not a deduplication), seeds the game and alias
-tables, flags implausibly old dates as suspect rather than silently correcting them, and is
-**idempotent** — safe to re-run against a populated database.
-
-```bash
-uv run slot-tracker-import path/to/Slots.ods
-```
-
-In a container, it's exposed as a console script:
-
-```bash
-docker exec <container> slot-tracker-import /import/Slots.ods
-```
-
-See [`docs/build-brief.md`](docs/build-brief.md) for the data model and the source-data findings the
-importer is built around.
-
 ## Development
 
 ```bash
@@ -108,7 +88,6 @@ app/
   services/       query and aggregation logic
   templates/      Jinja2, with partials for HTMX swaps
   static/         vendored CSS and JS
-  importer/       .ods importer (slot-tracker-import)
 alembic/versions/ migrations
 tests/
 ```
@@ -137,10 +116,10 @@ hostnames, volumes, and placement constraints to your own environment.
 
 | File | What it is |
 |---|---|
-| [`docs/build-brief.md`](docs/build-brief.md) | Data model, schema, and source-data analysis. The functional specification. |
+| [`docs/build-brief.md`](docs/build-brief.md) | Data model and schema. The functional specification. |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | Current state and the enhancement backlog. |
 | [`CLAUDE.md`](CLAUDE.md) | Repository conventions and hard constraints, written for AI coding assistants. |
-| [`DEPLOY.md`](DEPLOY.md) | Deployment notes for the environment this was originally built for. Specific to that setup; useful as a worked example. |
+| [`DEPLOY.md`](DEPLOY.md) | What the app requires of its environment, storage and secret handling, and the traps worth knowing. |
 
 ## License
 

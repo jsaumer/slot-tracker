@@ -6,10 +6,14 @@ readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
 
-# Runtime dependencies. These ship in the production image (uv sync --no-dev),
-# so anything the importer needs at `docker exec slot-tracker-import` time —
-# pandas, odfpy — and Alembic (invoked by docker-entrypoint.sh) live here, not
-# in the dev group.
+# Runtime dependencies — these ship in the image (`uv sync --no-dev`). Alembic is
+# included because docker-entrypoint.sh invokes it.
+#
+# TODO: pandas and odfpy are needed *only* by the development-only importer, which
+# is no longer shipped (see .dockerignore). They belong in the dev group, which
+# would drop pandas/numpy from the image. Moving them requires regenerating
+# uv.lock with `uv lock` — do it in the same commit, or CI's `uv sync --frozen`
+# will fail on a stale lockfile.
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
@@ -22,10 +26,6 @@ dependencies = [
     "pandas>=2.2",
     "odfpy>=1.4.1",
 ]
-
-[project.scripts]
-# Production runs this via `docker exec`, not `uv run`. See CLAUDE.md.
-slot-tracker-import = "app.importer.cli:main"
 
 [dependency-groups]
 # Dev-only. Excluded from the production image via `uv sync --no-dev`.

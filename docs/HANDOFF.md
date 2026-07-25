@@ -19,7 +19,7 @@ and the from-empty Postgres migration.
   frontend framework.
 - **Layout:** `app/{config,db,main,templating}.py`, `app/models/`, `app/routers/` (thin),
   `app/services/` (all aggregation + formulas), `app/templates/`, `app/static/`,
-  `app/importer/` (console script `slot-tracker-import`). Migrations `0001`–`0003`.
+  `app/importer/` (development-only, excluded from the image). Migrations `0001`–`0003`.
   Tests in `tests/` (59, all SQLite/pure — no Postgres needed).
 
 ## Built surfaces (v1 scope — all done)

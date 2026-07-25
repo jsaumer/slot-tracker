@@ -201,14 +201,8 @@ reversible.
 4. **Deploy** — apply the stack. Confirm PostgreSQL reports ready and the app logs
    `Running upgrade` followed by a successful startup.
 5. **Verify** — `GET /healthz` returns 200 and the app answers over your proxy.
-6. **Import** (optional) — if migrating from the spreadsheet, mount the workbook read-only and run
-   the importer. It is idempotent and safe to re-run:
-   ```bash
-   docker exec <app-container> slot-tracker-import /import/Slots.ods
-   ```
-   Cross-check the resulting totals against the source before relying on them.
-7. **Backups** — configure dumps *and* verify a restore before entering data you can't retype.
-8. **Confirm a redeploy preserves data** — pull a new image and check the database survives. This is
+6. **Backups** — configure dumps *and* verify a restore before entering data you can't retype.
+7. **Confirm a redeploy preserves data** — pull a new image and check the database survives. This is
    the step that catches a misconfigured volume path or ownership, and it is much cheaper to discover
    now than after a month of entries.
 

@@ -10,19 +10,26 @@ from datetime import date
 
 from app.importer.aliases import ALIAS_MAP
 
+# Re-exported: the canonical implementation lives in app.services.naming because
+# the entry path needs it and must not import importer code.
+from app.services.naming import normalize_name
+
 # Rows dated before this year are almost certainly typos (2002/2011/2012 in the
 # source). Flagged, never corrected.
 SUSPECT_BEFORE_YEAR = 2021
 
-_WHITESPACE = re.compile(r"\s+")
 # odfpy normalizes "https://" to "https:/" (and "http://" to "http:/") when it
 # writes hrefs back out; repair the collapsed slash before storing.
 _COLLAPSED_SCHEME = re.compile(r"^(https?):/(?!/)", re.IGNORECASE)
 
-
-def normalize_name(raw: str) -> str:
-    """Trim and collapse internal whitespace runs to a single space."""
-    return _WHITESPACE.sub(" ", raw).strip()
+__all__ = [
+    "SUSPECT_BEFORE_YEAR",
+    "build_alias_lookup",
+    "canonical_game_name",
+    "is_date_suspect",
+    "normalize_name",
+    "repair_replay_url",
+]
 
 
 def build_alias_lookup(alias_map: dict[str, str] = ALIAS_MAP) -> dict[str, str]:

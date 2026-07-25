@@ -14,6 +14,11 @@ data/
 docs/
 deploy/
 compose.dev.yaml
+
+# Development-only tooling: the .ods importer is not part of the running app and
+# ships no entry point, so it is kept out of the image. Nothing under app/ imports
+# it — the shared name-normalization helper lives in app/services/naming.py.
+app/importer/
 DEPLOY.md
 CLAUDE.md
 # README.md is intentionally NOT ignored: pyproject declares

@@ -57,14 +57,16 @@ app/
   services/          query and aggregation logic — keep routers thin
   templates/         Jinja2; base.html plus per-surface partials for HTMX swaps
   static/            vendored CSS/JS assets
-  importer/          .ods importer, exposed as the `slot-tracker-import` console script
+  importer/          .ods importer — development-only, excluded from the image
 alembic/
   versions/
 tests/
 ```
 
-`slot-tracker-import` must be declared as a `[project.scripts]` entry point in `pyproject.toml` —
-production runs it via `docker exec`, not `uv run`.
+The importer is **development-only**: no `[project.scripts]` entry point, and `app/importer/` is
+excluded from the container image via `.dockerignore`. Nothing under `app/` may import it — shared
+name normalization lives in `app/services/naming.py`. Do not reintroduce an entry point for it; the
+built image must expose no undocumented commands.
 
 ## Commands
 
@@ -73,7 +75,6 @@ uv sync                                    install
 uv run uvicorn app.main:app --reload       dev server on :8000
 uv run alembic revision --autogenerate -m "…"
 uv run alembic upgrade head
-uv run slot-tracker-import path/to/Slots.ods
 uv run pytest
 uv run ruff check --fix . && uv run ruff format .
 docker compose -f compose.dev.yaml up -d   local postgres on 127.0.0.1:5432
@@ -120,6 +121,10 @@ These come from the deployment envelope. Violating them breaks the deploy.
 
 ## The importer
 
+Development-only tooling, retained for its tests and because it records how the original data set was
+interpreted. It is not shipped in the image and has no entry point — run
+`app.importer.cli:main` directly from a checkout. If it ever changes, these rules still hold:
+
 - Reads `Slots.ods` directly. `pandas.read_excel(..., engine="odf")` for cells; `odfpy` walking
   `odf.text.A` elements for embedded hyperlinks.
 - odfpy normalizes `https://` to `https:/` — repair with a regex before storing.
@@ -130,8 +135,8 @@ These come from the deployment envelope. Violating them breaks the deploy.
 - Seed `game_alias` from the map in the brief before importing bonuses.
 - Set `end_convention = 'spin_end'` for hunt 27 only; everything else defaults to `after_opening`.
 - Print a summary at the end (rows inserted, games created, hunts created, suspects flagged) so a run
-  can be checked against the expected figures in `DEPLOY.md` step 7.
-- The workbook is mounted read-only at `/import` in production. Never write to the source path.
+  can be checked against expected figures.
+- Never write to the source workbook path.
 
 ## Application surface
 
