@@ -21,7 +21,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import Select, and_, case, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Bonus
@@ -141,9 +141,7 @@ def build_dashboard(
     undated = 0
     if conditions:
         undated = (
-            session.scalar(
-                select(func.count()).select_from(Bonus).where(Bonus.played_on.is_(None))
-            )
+            session.scalar(select(func.count()).select_from(Bonus).where(Bonus.played_on.is_(None)))
             or 0
         )
 
@@ -168,10 +166,6 @@ def build_dashboard(
 
 def _quantize(value: Decimal | None) -> Decimal | None:
     return value.quantize(Decimal("0.01")) if value is not None else None
-
-
-def _scoped(stmt: Select, conditions: list[Any]) -> Select:
-    return stmt.where(*conditions) if conditions else stmt
 
 
 def _median(session: Session, conditions: list[Any]) -> Decimal | None:

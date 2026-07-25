@@ -68,9 +68,7 @@ def test_headline_aggregates_match_the_pure_helpers() -> None:
         multipliers = _pure_multipliers()
 
         assert d.total_bonuses == len(multipliers)
-        assert d.total_win == sum(
-            (Decimal(win) for *_rest, win in _ROWS), Decimal("20.00")
-        )
+        assert d.total_win == sum((Decimal(win) for *_rest, win in _ROWS), Decimal("20.00"))
         assert d.mean_multiplier == aggregate.mean(multipliers)
         assert d.best_multiplier == max(multipliers)
 
