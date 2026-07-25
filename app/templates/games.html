@@ -4,7 +4,9 @@
 {% block title %}Games · Slot Tracker{% endblock %}
 {% block content %}
 <div id="games-content">
-  <h1>Game stats <span class="muted small">· {{ "{:,}".format(page.total) }} games</span></h1>
+  <h1>Game stats <span class="muted small">· {{ "{:,}".format(page.total) }} games</span>
+    <a class="small" href="/games/merges" style="font-weight:400">find duplicates</a>
+  </h1>
 
   <datalist id="game-names">{% for n in names %}<option value="{{ n }}"></option>{% endfor %}</datalist>
 

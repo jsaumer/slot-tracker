@@ -282,6 +282,24 @@ def test_extra_exports_are_csv(client: TestClient, path: str) -> None:
     assert "text/csv" in resp.headers["content-type"]
 
 
+def test_merge_suggestions_page_renders(client: TestClient) -> None:
+    """Also guards route ordering: /games/merges must be registered before
+    /games/{game_id}, which parses its segment as an int and would reject it."""
+    resp = client.get("/games/merges")
+    assert resp.status_code == 200
+    assert "Duplicate games" in resp.text
+
+
+def test_applying_a_suggestion_redirects_back_to_the_list(client: TestClient) -> None:
+    resp = client.post(
+        "/games/merges",
+        data={"source": "Gates of Olympus", "target": "Sugar Rush"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/games/merges"
+
+
 def test_games_merge_redirects(client: TestClient) -> None:
     resp = client.post(
         "/games/merge",
