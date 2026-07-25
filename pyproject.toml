@@ -1,6 +1,6 @@
 [project]
 name = "slot-tracker"
-version = "0.3.0"
+version = "0.3.1"
 description = "Self-hosted slot bonus, hunt, and session tracker."
 readme = "README.md"
 requires-python = ">=3.14"
