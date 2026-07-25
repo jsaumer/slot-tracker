@@ -21,13 +21,11 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Header / nav */
@@ -46,7 +44,8 @@ body {
 }
 .nav a:hover, .nav a:focus { color: var(--text); background: var(--surface-2); }
 
-.content { max-width: 900px; margin: 0 auto; padding: 16px; }
+/* Wide enough that the eight-column log and games tables fit without scrolling. */
+.content { max-width: 1200px; margin: 0 auto; padding: 16px; }
 
 /* Cards */
 .card {
@@ -62,19 +61,19 @@ h2 { font-size: 1.1rem; margin: 0 0 10px; }
 form.stack { display: flex; flex-direction: column; gap: var(--gap); }
 label { display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
 input, select, textarea {
-  width: 100%; padding: 14px; font-size: 1.05rem;
+  width: 100%; padding: 9px 10px; font-size: 1rem;
   background: var(--surface-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 10px;
-  -webkit-appearance: none; appearance: none;
+  border: 1px solid var(--border); border-radius: 8px;
+  appearance: none;
 }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 .row { display: flex; gap: var(--gap); }
 .row > * { flex: 1; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 15px 18px; font-size: 1.05rem; font-weight: 600;
+  padding: 9px 16px; font-size: 1rem; font-weight: 600;
   background: var(--accent); color: var(--accent-ink);
-  border: none; border-radius: 10px; cursor: pointer; text-decoration: none;
+  border: none; border-radius: 8px; cursor: pointer; text-decoration: none;
 }
 .btn:active { transform: translateY(1px); }
 .btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
@@ -82,15 +81,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); bo
 
 /* Live multiplier readout on the add form */
 .readout {
-  font-size: 2rem; font-weight: 800; text-align: center;
-  padding: 10px; color: var(--accent);
+  font-size: 1.6rem; font-weight: 800; text-align: center;
+  padding: 6px; color: var(--accent);
 }
-.readout.small { font-size: 1.2rem; }
+.readout.small { font-size: 1.1rem; }
 
 /* Tables / lists */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
 tbody tr:hover { background: var(--surface-2); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
