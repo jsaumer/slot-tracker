@@ -27,6 +27,9 @@ _BONUS_HEADER = [
     "bet",
     "win",
     "multiplier",
+    "cost",
+    "bought",
+    "cost_multiplier",
     "notable",
     "date_suspect",
     "hunt_id",
@@ -116,6 +119,11 @@ def iter_bonus_csv(session: Session, filters: LogFilters | None = None) -> Itera
                 bonus.bet,
                 bonus.win,
                 bonus.multiplier,
+                bonus.cost if bonus.cost is not None else "",
+                # Empty rather than "None": provenance is genuinely unknown for
+                # imported rows, and "False" would misrepresent that.
+                "" if bonus.bought is None else bonus.bought,
+                bonus.cost_multiplier if bonus.cost_multiplier is not None else "",
                 bonus.notable,
                 bonus.date_suspect,
                 bonus.hunt_id or "",

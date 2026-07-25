@@ -34,6 +34,7 @@ def export_bonuses(
     notable: bool = False,
     suspect: bool = False,
     has_replay: bool = False,
+    provenance: str = "",
 ) -> StreamingResponse:
     """Accepts the same filters as /log, so the button in the log's filter bar
     exports what is on screen rather than the whole table."""
@@ -46,6 +47,7 @@ def export_bonuses(
         notable=notable,
         suspect=suspect,
         has_replay=has_replay,
+        provenance=provenance,
     )
     return _csv(iter_bonus_csv(session, filters), "bonus_log.csv")
 

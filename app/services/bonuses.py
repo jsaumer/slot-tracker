@@ -34,6 +34,8 @@ def update_bonus(
     played_on: date | None,
     bet: Decimal,
     win: Decimal,
+    cost: Decimal | None = None,
+    bought: bool | None = None,
     notes: str | None = None,
     replay_url: str | None = None,
     notable: bool = False,
@@ -54,6 +56,8 @@ def update_bonus(
     bonus.played_on = played_on
     bonus.bet = bet
     bonus.win = win
+    bonus.cost = cost if bought else None
+    bonus.bought = bought
     bonus.notes = notes or None
     bonus.replay_url = replay_url or None
     bonus.notable = notable
@@ -78,6 +82,8 @@ def create_bonus(
     played_on: date,
     bet: Decimal,
     win: Decimal,
+    cost: Decimal | None = None,
+    bought: bool | None = None,
     notes: str | None = None,
     replay_url: str | None = None,
     notable: bool = False,
@@ -89,6 +95,10 @@ def create_bonus(
         played_on=played_on,
         bet=bet,
         win=win,
+        # A natural bonus has no buy price; keeping cost NULL there stops
+        # cost_multiplier from claiming a return that was never paid for.
+        cost=cost if bought else None,
+        bought=bought,
         notes=notes or None,
         replay_url=replay_url or None,
         notable=notable,
@@ -110,8 +120,13 @@ LOG_SORTS = {
     "bet": Bonus.bet,
     "win": Bonus.win,
     "x": Bonus.multiplier,
+    "cost": Bonus.cost,
+    "costx": Bonus.cost_multiplier,
     "notes": Bonus.notes,
 }
+
+# Values accepted by the log's provenance filter.
+PROVENANCE = ("bought", "natural", "unknown")
 
 DEFAULT_LOG_SORT = Sort(key="date", descending=True)
 
@@ -142,6 +157,9 @@ class LogFilters:
     notable: bool = False
     suspect: bool = False
     has_replay: bool = False
+    # "bought" | "natural" | "unknown" | None. "unknown" is a real, useful filter:
+    # it isolates the imported rows whose provenance was never recorded.
+    provenance: str | None = None
 
 
 @dataclass
@@ -256,4 +274,10 @@ def log_conditions(filters: LogFilters) -> list[Any]:
         conditions.append(Bonus.date_suspect.is_(True))
     if filters.has_replay:
         conditions.append(Bonus.replay_url.is_not(None))
+    if filters.provenance == "bought":
+        conditions.append(Bonus.bought.is_(True))
+    elif filters.provenance == "natural":
+        conditions.append(Bonus.bought.is_(False))
+    elif filters.provenance == "unknown":
+        conditions.append(Bonus.bought.is_(None))
     return conditions

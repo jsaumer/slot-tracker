@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from app.services.bonuses import LogFilters
+from app.services.bonuses import PROVENANCE, LogFilters
 
 
 def log_filters(
@@ -18,6 +18,7 @@ def log_filters(
     notable: bool = False,
     suspect: bool = False,
     has_replay: bool = False,
+    provenance: str = "",
 ) -> LogFilters:
     """Raw query strings -> typed LogFilters. Shared by the log view and the CSV
     export so the two can never drift apart."""
@@ -30,6 +31,7 @@ def log_filters(
         notable=notable,
         suspect=suspect,
         has_replay=has_replay,
+        provenance=provenance if provenance in PROVENANCE else None,
     )
 
 

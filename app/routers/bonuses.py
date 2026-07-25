@@ -47,6 +47,8 @@ def add_bonus(
     bet: str = Form(""),
     win: str = Form(""),
     played_on: str = Form(""),
+    cost: str = Form(""),
+    bought: bool = Form(False),
     notes: str = Form(""),
     notable: bool = Form(False),
 ):
@@ -64,6 +66,10 @@ def add_bonus(
         played_on=day,
         bet=bet_dec,
         win=win_dec,
+        cost=parse_decimal(cost, places=2),
+        # App-entered rows are always explicit about provenance; only imported rows
+        # stay NULL/unknown.
+        bought=bought,
         notes=notes,
         notable=notable,
     )
@@ -100,6 +106,8 @@ def update_bonus(
     bet: str = Form(""),
     win: str = Form(""),
     played_on: str = Form(""),
+    cost: str = Form(""),
+    bought: bool = Form(False),
     notes: str = Form(""),
     replay_url: str = Form(""),
     notable: bool = Form(False),
@@ -126,6 +134,8 @@ def update_bonus(
         played_on=parse_date(played_on),
         bet=bet_dec,
         win=win_dec,
+        cost=parse_decimal(cost, places=2),
+        bought=bought,
         notes=notes,
         replay_url=replay_url,
         notable=notable,
@@ -157,6 +167,7 @@ def log(
     notable: bool = False,
     suspect: bool = False,
     has_replay: bool = False,
+    provenance: str = "",
     sort: str = "",
     direction: str = Query("", alias="dir"),
     offset: int = 0,
@@ -179,6 +190,7 @@ def log(
             notable=notable,
             suspect=suspect,
             has_replay=has_replay,
+            provenance=provenance,
         ),
         sort=active_sort,
         limit=50,
@@ -193,6 +205,7 @@ def log(
         "notable": "1" if notable else "",
         "suspect": "1" if suspect else "",
         "has_replay": "1" if has_replay else "",
+        "provenance": provenance if provenance in bonus_svc.PROVENANCE else "",
     }
     ctx = {
         "page": page,

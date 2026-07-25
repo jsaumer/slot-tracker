@@ -121,6 +121,8 @@ def add_hunt_bonus(
     bet: str = Form(""),
     win: str = Form(""),
     played_on: str = Form(""),
+    cost: str = Form(""),
+    bought: bool = Form(True),
     notes: str = Form(""),
     notable: bool = Form(False),
 ):
@@ -144,6 +146,9 @@ def add_hunt_bonus(
         played_on=parse_date(played_on) or today_local(),
         bet=bet_dec,
         win=win_dec,
+        cost=parse_decimal(cost, places=2),
+        # Hunt bonuses are bought by definition, so the checkbox defaults on.
+        bought=bought,
         notes=notes,
         notable=notable,
         hunt_id=hunt_id,

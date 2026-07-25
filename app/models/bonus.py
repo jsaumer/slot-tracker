@@ -42,6 +42,7 @@ class Bonus(Base):
     __table_args__ = (
         CheckConstraint("bet > 0", name="bet_positive"),
         CheckConstraint("win >= 0", name="win_nonneg"),
+        CheckConstraint("cost IS NULL OR cost >= 0", name="cost_nonneg"),
         # The four indexes from the brief, with their exact names.
         Index("bonus_game_idx", "game_id"),
         Index("bonus_played_on_idx", column("played_on").desc()),
@@ -71,6 +72,23 @@ class Bonus(Base):
     # Generated column — never written from Python, never recomputed here.
     multiplier: Mapped[Decimal | None] = mapped_column(
         Numeric(14, 4), Computed("win / bet", persisted=True)
+    )
+    # What was paid to trigger this bonus — a bonus-buy price. NULL when the bonus
+    # was not bought, or when the cost is unknown. Independent of `bet`: a buy is
+    # typically 75-100x the spin stake, but neither derives from the other.
+    cost: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    # Deliberately three-state. NULL means "unknown", which is the honest value for
+    # every historically imported row; True/False are only ever set by the app. See
+    # migration 0005 and DEPLOY.md.
+    bought: Mapped[bool | None] = mapped_column(Boolean)
+    # Generated column — how many times a buy paid for itself. NULLIF guards a zero
+    # cost. The `* 1.0` is load-bearing for portability: SQLite performs integer
+    # division when both operands are whole numbers (250 / 20 -> 12, not 12.5),
+    # which would make the test database disagree with PostgreSQL. Multiplying by a
+    # decimal literal forces exact division on both, and stays numeric on
+    # PostgreSQL so no float error is introduced.
+    cost_multiplier: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 4), Computed("win * 1.0 / NULLIF(cost, 0)", persisted=True)
     )
     notes: Mapped[str | None] = mapped_column(Text)
     replay_url: Mapped[str | None] = mapped_column(Text)

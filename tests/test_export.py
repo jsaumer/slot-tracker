@@ -92,6 +92,42 @@ def test_bonus_export_flattens_multiline_notes() -> None:
         assert "line one line two" in lines[1]
 
 
+def test_bonus_export_includes_cost_and_leaves_unknown_provenance_blank() -> None:
+    Session = make_sessionmaker()
+    with Session() as s:
+        create_bonus(
+            session=s,
+            game_name="Bought Game",
+            played_on=date(2024, 4, 1),
+            bet=Decimal("0.20"),
+            win=Decimal("250.00"),
+            cost=Decimal("20.00"),
+            bought=True,
+        )
+        create_bonus(
+            session=s,
+            game_name="Unknown Game",
+            played_on=date(2024, 4, 2),
+            bet=Decimal("0.20"),
+            win=Decimal("10.00"),
+        )
+        s.commit()
+
+        lines = _csv(iter_bonus_csv(s))
+        header = lines[0].split(",")
+        assert "cost" in header and "bought" in header and "cost_multiplier" in header
+
+        bought_row = next(line for line in lines if line.startswith("1,"))
+        assert "20.00" in bought_row
+        assert "12.5" in bought_row  # 250 / 20
+
+        unknown_row = next(line for line in lines if "Unknown Game" in line)
+        cells = unknown_row.split(",")
+        # Blank, not "False": provenance was never recorded.
+        assert cells[header.index("bought")] == ""
+        assert cells[header.index("cost")] == ""
+
+
 def test_hunt_export_includes_derived_result() -> None:
     Session = make_sessionmaker()
     with Session() as s:

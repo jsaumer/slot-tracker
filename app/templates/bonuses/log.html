@@ -24,6 +24,15 @@
         {% endfor %}
       </select>
     </div>
+    <div>
+      <label>Provenance</label>
+      <select name="provenance">
+        <option value="">Any</option>
+        <option value="bought" {% if filters.provenance == 'bought' %}selected{% endif %}>Bought</option>
+        <option value="natural" {% if filters.provenance == 'natural' %}selected{% endif %}>Natural</option>
+        <option value="unknown" {% if filters.provenance == 'unknown' %}selected{% endif %}>Unknown</option>
+      </select>
+    </div>
     <div class="flags">
       <label><input type="checkbox" name="notable" value="1" {% if filters.notable %}checked{% endif %}> ★ Notable</label>
       <label><input type="checkbox" name="has_replay" value="1" {% if filters.has_replay %}checked{% endif %}> ▶ Has replay</label>
@@ -52,6 +61,8 @@
           {{ sortable("bet", "Bet", sort, sort_url, num=True, target=target) }}
           {{ sortable("win", "Win", sort, sort_url, num=True, target=target) }}
           {{ sortable("x", "X", sort, sort_url, num=True, target=target) }}
+          {{ sortable("cost", "Cost", sort, sort_url, num=True, target=target) }}
+          {{ sortable("costx", "Buy X", sort, sort_url, num=True, target=target) }}
           {{ sortable("notes", "Notes", sort, sort_url, target=target) }}
           <th></th><th></th>
         </tr>
@@ -64,6 +75,8 @@
           <td class="num">{{ r.bonus.bet|money }}</td>
           <td class="num">{{ r.bonus.win|money }}</td>
           <td class="num">{{ r.bonus.multiplier|multiplier }}</td>
+          <td class="num">{% if r.bonus.cost is not none %}{{ r.bonus.cost|money }}{% elif r.bonus.bought is none %}<span class="muted" title="provenance not recorded">·</span>{% endif %}</td>
+          <td class="num">{{ r.bonus.cost_multiplier|multiplier if r.bonus.cost_multiplier is not none else "" }}</td>
           <td class="notes" title="{{ r.bonus.notes or '' }}">{{ r.bonus.notes or "" }}</td>
           <td>{% if r.bonus.replay_url %}<a href="{{ r.bonus.replay_url }}" target="_blank" rel="noopener">▶</a>{% endif %}</td>
           <td><a href="/bonus/{{ r.bonus.id }}/edit" title="edit" aria-label="edit bonus">✎</a></td>

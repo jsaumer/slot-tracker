@@ -203,6 +203,11 @@ def test_unknown_session_404(client: TestClient) -> None:
         "/log?notable=1",
         "/log?has_replay=1",
         "/log?suspect=1",
+        "/log?provenance=bought",
+        "/log?provenance=natural",
+        "/log?provenance=unknown",
+        "/log?sort=cost&dir=desc",
+        "/log?sort=costx&dir=asc",
         "/log?q=Fruitz&sort=bet&dir=asc&notable=1",
     ],
 )
@@ -280,6 +285,46 @@ def test_extra_exports_are_csv(client: TestClient, path: str) -> None:
     resp = client.get(path)
     assert resp.status_code == 200
     assert "text/csv" in resp.headers["content-type"]
+
+
+def test_adding_a_bought_bonus_records_cost_and_return(client: TestClient) -> None:
+    resp = client.post(
+        "/bonus",
+        data={
+            "game": "Buy Test",
+            "bet": "0.20",
+            "win": "250",
+            "played_on": "2024-07-01",
+            "cost": "20",
+            "bought": "true",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert resp.status_code == 200
+    with SessionLocal() as s:
+        bonus = s.scalar(select(Bonus).where(Bonus.cost == Decimal("20.00")))
+        assert bonus is not None
+        assert bonus.bought is True
+        assert bonus.cost_multiplier == Decimal("12.5")
+
+
+def test_adding_without_the_buy_checkbox_stores_no_cost(client: TestClient) -> None:
+    resp = client.post(
+        "/bonus",
+        data={
+            "game": "Natural Test",
+            "bet": "0.20",
+            "win": "33",
+            "played_on": "2024-07-02",
+            "cost": "20",  # ignored: the checkbox was not ticked
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert resp.status_code == 200
+    with SessionLocal() as s:
+        bonus = s.scalar(select(Bonus).where(Bonus.win == Decimal("33.00")))
+        assert bonus.bought is False
+        assert bonus.cost is None
 
 
 def test_merge_suggestions_page_renders(client: TestClient) -> None:

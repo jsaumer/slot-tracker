@@ -191,6 +191,15 @@ restore, not an Alembic downgrade.
 session_id IS NOT NULL` for the per-session P&L query, mirroring `bonus_hunt_idx`. Additive and
 reversible.
 
+**`bonus.cost` / `bonus.bought` / `bonus.cost_multiplier`** (migration `0005`). Records what a bonus
+cost to trigger, not just what it paid. `cost` is the buy price, independent of `bet`. **`bought` is
+nullable on purpose** — three states, where `NULL` means "unknown", the honest value for every row
+imported from the original data set; only the application ever writes `true`/`false`. Defaulting
+existing rows to `false` would assert something untrue about them, the same reasoning that made
+`played_on` nullable. `cost_multiplier` is generated as `win * 1.0 / NULLIF(cost, 0)`; the `* 1.0` is
+load-bearing, because SQLite (the test database) performs integer division on whole numbers and would
+otherwise disagree with PostgreSQL. Additive and fully reversible.
+
 ## First-run checklist
 
 1. **Secrets** — generate the database password and `SECRET_KEY` (hex), and make them available to
