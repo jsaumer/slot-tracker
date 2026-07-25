@@ -125,8 +125,9 @@ Development-only tooling, retained for its tests and because it records how the 
 interpreted. It is not shipped in the image and has no entry point — run
 `app.importer.cli:main` directly from a checkout. If it ever changes, these rules still hold:
 
-- Reads `Slots.ods` directly. `pandas.read_excel(..., engine="odf")` for cells; `odfpy` walking
-  `odf.text.A` elements for embedded hyperlinks.
+- Reads `Slots.ods` directly, walking the document with `odfpy` — both for cell values and for the
+  `odf.text.A` elements carrying embedded hyperlinks. (The brief suggested `pandas.read_excel`; the
+  implementation does not use pandas, and it is not a dependency.)
 - odfpy normalizes `https://` to `https:/` — repair with a regex before storing.
 - **Must be idempotent.** Safe to re-run against a populated database.
 - Import is a **union** of the main log and the hunt tabs, not a dedup — the sets are disjoint and
