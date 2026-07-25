@@ -31,6 +31,20 @@
     <div class="readout" id="mult">—</div>
 
     <div class="row">
+      <div style="display:flex;align-items:end;">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;">
+          <input type="checkbox" id="bought" name="bought" style="width:auto;"> Bonus buy
+        </label>
+      </div>
+      <div>
+        <label for="cost">Buy cost</label>
+        <input id="cost" name="cost" inputmode="decimal" disabled
+               placeholder="tick “Bonus buy” first">
+      </div>
+    </div>
+    <div class="readout small" id="costmult"></div>
+
+    <div class="row">
       <div>
         <label for="played_on">Date</label>
         <input id="played_on" name="played_on" type="date" value="{{ today }}">
@@ -59,17 +73,32 @@
       var bet = document.getElementById('bet');
       var win = document.getElementById('win');
       var out = document.getElementById('mult');
+      var bought = document.getElementById('bought');
+      var cost = document.getElementById('cost');
+      var costOut = document.getElementById('costmult');
+
+      function fmt(x) { return x.toFixed(2).replace(/\.?0+$/, '') + 'x'; }
+
       function update() {
-        var b = parseFloat(bet.value), w = parseFloat(win.value);
-        if (b > 0 && !isNaN(w) && w >= 0) {
-          out.textContent = (w / b).toFixed(2).replace(/\.?0+$/, '') + 'x';
-        } else {
-          out.textContent = '—';
-        }
+        var b = parseFloat(bet.value), w = parseFloat(win.value), c = parseFloat(cost.value);
+        out.textContent = (b > 0 && !isNaN(w) && w >= 0) ? fmt(w / b) : '—';
+        // Return on the buy: what the bonus paid relative to what it cost.
+        costOut.textContent = (bought.checked && c > 0 && !isNaN(w) && w >= 0)
+          ? fmt(w / c) + ' on the buy'
+          : '';
       }
+
+      function syncCost() {
+        cost.disabled = !bought.checked;
+        if (!bought.checked) { cost.value = ''; }
+        update();
+      }
+
       bet.addEventListener('input', update);
       win.addEventListener('input', update);
-      update();
+      cost.addEventListener('input', update);
+      bought.addEventListener('change', syncCost);
+      syncCost();
       // Ready for the next entry (also runs after each HTMX swap).
       document.getElementById('game').focus();
     })();

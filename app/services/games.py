@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from difflib import SequenceMatcher, get_close_matches
+from itertools import combinations
 from typing import Any
 
 from sqlalchemy import delete, func, select, update
@@ -234,6 +237,154 @@ def game_detail(
         ).scalars()
     )
     return GameDetail(stat=_stat(row), aliases=aliases, top_hits=top_hits, recent=recent)
+
+
+# --------------------------------------------------------------------------- #
+# duplicate detection
+# --------------------------------------------------------------------------- #
+# Everything that isn't alphanumeric, for the "same after aggressive
+# normalization" tier: "Stack'Em"/"Stack'em" and "Hop'n'Pop"/"Hop 'n' Pop" all
+# collapse to one fingerprint.
+_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+
+# A trailing sequel marker: "Money Train 2", "Chaos Crew II", "xWays Hoarder 2".
+_TRAILING_ORDINAL = re.compile(r"^(.*?)\s*(\d+|i{1,3}|iv|vi{0,3}|ix|x)$", re.IGNORECASE)
+
+_ROMAN = {
+    "i": 1,
+    "ii": 2,
+    "iii": 3,
+    "iv": 4,
+    "v": 5,
+    "vi": 6,
+    "vii": 7,
+    "viii": 8,
+    "ix": 9,
+    "x": 10,
+}
+
+
+@dataclass
+class GameRef:
+    id: int
+    name: str
+    count: int
+
+
+@dataclass
+class MergeSuggestion:
+    """A candidate duplicate pair. ``source`` is the proposed casualty and
+    ``target`` the proposed survivor, defaulting to whichever has more bonuses —
+    but the caller can swap them, because the more common spelling is not always
+    the correct one."""
+
+    source: GameRef
+    target: GameRef
+    similarity: Decimal
+    certain: bool
+
+
+def _fingerprint(name: str) -> str:
+    return _NON_ALNUM.sub("", name.lower())
+
+
+def _ordinal_value(token: str) -> int | None:
+    if token.isdigit():
+        return int(token)
+    return _ROMAN.get(token.lower())
+
+
+def _split_ordinal(name: str) -> tuple[str, int] | None:
+    """Split "Money Train 2" into ("money train", 2). Roman numerals resolve to
+    the same value as their arabic form, so "Chaos Crew II" and "Chaos Crew 2"
+    are recognized as the *same* entry rather than different sequels."""
+    match = _TRAILING_ORDINAL.match(name.strip())
+    if match is None:
+        return None
+    stem, token = match.group(1).strip(), match.group(2)
+    value = _ordinal_value(token)
+    if not stem or value is None:
+        return None
+    return stem.lower(), value
+
+
+def are_distinct_sequels(a: str, b: str) -> bool:
+    """True when two similar names are different entries in a series.
+
+    This guard is the difference between a useful tool and a destructive one:
+    "Money Train 2" and "Money Train 3" are ~0.95 similar but are separate games,
+    and the build brief is explicit that sequels stay distinct. Also catches a base
+    game against its own sequel ("Big Bass" vs "Big Bass 2").
+    """
+    left, right = _split_ordinal(a), _split_ordinal(b)
+    if left and right:
+        # Same series, different number -> distinct. Same number (e.g. 2 vs II)
+        # -> not distinct, so it can still be offered as a duplicate.
+        return left[0] == right[0] and left[1] != right[1]
+    if left:
+        return left[0] == b.strip().lower()
+    if right:
+        return right[0] == a.strip().lower()
+    return False
+
+
+def suggest_merges(
+    session: Session,
+    *,
+    threshold: float = 0.87,
+    limit: int = 50,
+) -> list[MergeSuggestion]:
+    """Find likely duplicate games, so the merge tool is usable without eyeballing
+    hundreds of names.
+
+    Two tiers: names identical once punctuation, case and spacing are stripped
+    (certain), and names above a similarity threshold (likely). Sequels are
+    excluded from both — see ``are_distinct_sequels``.
+    """
+    rows = session.execute(
+        select(Game.id, Game.name, func.count(Bonus.id))
+        .outerjoin(Bonus, Bonus.game_id == Game.id)
+        .group_by(Game.id, Game.name)
+    ).all()
+    refs = {name: GameRef(id=game_id, name=name, count=count) for game_id, name, count in rows}
+    names = sorted(refs)
+
+    seen: set[tuple[str, str]] = set()
+    certain: list[MergeSuggestion] = []
+    likely: list[MergeSuggestion] = []
+
+    def add(bucket: list[MergeSuggestion], a: str, b: str, similarity: float, is_certain: bool):
+        pair = (a, b) if a < b else (b, a)
+        if pair in seen or are_distinct_sequels(a, b):
+            return
+        seen.add(pair)
+        first, second = refs[a], refs[b]
+        # Higher bonus count survives by default.
+        target, source = (first, second) if first.count >= second.count else (second, first)
+        bucket.append(
+            MergeSuggestion(
+                source=source,
+                target=target,
+                similarity=Decimal(str(round(similarity, 3))),
+                certain=is_certain,
+            )
+        )
+
+    by_fingerprint: dict[str, list[str]] = {}
+    for name in names:
+        by_fingerprint.setdefault(_fingerprint(name), []).append(name)
+    for group in by_fingerprint.values():
+        for a, b in combinations(group, 2):
+            add(certain, a, b, 1.0, True)
+
+    for name in names:
+        others = [other for other in names if other != name]
+        for match in get_close_matches(name, others, n=5, cutoff=threshold):
+            add(likely, name, match, SequenceMatcher(None, name, match).ratio(), False)
+
+    certain.sort(key=lambda s: -(s.source.count + s.target.count))
+    likely.sort(key=lambda s: (-s.similarity, -(s.source.count + s.target.count)))
+    return (certain + likely)[:limit]
 
 
 def _stat(row: Any) -> GameStat:

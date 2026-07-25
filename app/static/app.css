@@ -77,6 +77,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); bo
 }
 .btn:active { transform: translateY(1px); }
 .btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.btn.secondary.active { border-color: var(--accent); color: var(--accent); }
 .btn.block { width: 100%; }
 
 /* Live multiplier readout on the add form */

@@ -5,7 +5,10 @@
 <p class="small"><a href="/hunts">← All hunts</a></p>
 <h1>{{ view.hunt.label or ("Hunt " ~ view.hunt.id) }}
   <span class="badge {{ view.hunt.status }}">{{ view.hunt.status }}</span>
+  <a class="small" href="/hunts/{{ view.hunt.id }}/edit" style="font-weight:400">edit</a>
 </h1>
+
+{% if error %}<div class="flash" style="background:color-mix(in srgb,var(--danger) 20%,transparent)">{{ error }}</div>{% endif %}
 
 <div class="tiles">
   <div class="tile"><div class="k">Start</div><div class="v">{{ view.hunt.start_balance|money }}</div></div>
@@ -27,12 +30,70 @@
       <datalist id="game-options">{% for g in games %}<option value="{{ g }}"></option>{% endfor %}</datalist>
     </div>
     <div class="row">
-      <div><label>Bet</label><input name="bet" inputmode="decimal" required></div>
-      <div><label>Win</label><input name="win" inputmode="decimal" required></div>
+      <div><label for="hbet">Bet</label><input id="hbet" name="bet" inputmode="decimal" required></div>
+      <div><label for="hwin">Win</label><input id="hwin" name="win" inputmode="decimal" required></div>
       <div><label>Date</label><input type="date" name="played_on" value="{{ today }}"></div>
     </div>
+
+    <div class="readout small" id="hmult">—</div>
+
+    <div class="row">
+      <div style="display:flex;align-items:end;">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;">
+          <input type="checkbox" id="hbought" name="bought" value="true" checked style="width:auto;">
+          Bonus buy
+        </label>
+      </div>
+      <div>
+        <label for="hcost">Buy cost</label>
+        <input id="hcost" name="cost" inputmode="decimal">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="hnotes">Notes <span class="muted small">(optional)</span></label>
+        <input id="hnotes" name="notes" autocomplete="off">
+      </div>
+      <div style="display:flex;align-items:end;">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;">
+          <input type="checkbox" name="notable" style="width:auto;"> Notable hit
+        </label>
+      </div>
+    </div>
+
     <button class="btn" type="submit">Add to hunt</button>
   </form>
+
+  <script>
+    (function () {
+      var bet = document.getElementById('hbet');
+      var win = document.getElementById('hwin');
+      var out = document.getElementById('hmult');
+      var bought = document.getElementById('hbought');
+      var cost = document.getElementById('hcost');
+      function update() {
+        var b = parseFloat(bet.value), w = parseFloat(win.value), c = parseFloat(cost.value);
+        var parts = [];
+        if (b > 0 && !isNaN(w) && w >= 0) {
+          parts.push((w / b).toFixed(2).replace(/\.?0+$/, '') + 'x');
+        }
+        if (bought.checked && c > 0 && !isNaN(w) && w >= 0) {
+          parts.push((w / c).toFixed(2).replace(/\.?0+$/, '') + 'x on the buy');
+        }
+        out.textContent = parts.length ? parts.join(' · ') : '—';
+      }
+      function syncCost() {
+        cost.disabled = !bought.checked;
+        if (!bought.checked) { cost.value = ''; }
+        update();
+      }
+      bet.addEventListener('input', update);
+      win.addEventListener('input', update);
+      cost.addEventListener('input', update);
+      bought.addEventListener('change', syncCost);
+    })();
+  </script>
 </div>
 
 <div class="card">
@@ -62,6 +123,7 @@
         {{ sortable("bet", "Bet", sort, sort_url, num=True) }}
         {{ sortable("win", "Win", sort, sort_url, num=True) }}
         {{ sortable("x", "X", sort, sort_url, num=True) }}
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -72,6 +134,7 @@
         <td class="num">{{ bonus.bet|money }}</td>
         <td class="num">{{ bonus.win|money }}</td>
         <td class="num">{{ bonus.multiplier|multiplier }}</td>
+        <td><a href="/bonus/{{ bonus.id }}/edit" title="edit" aria-label="edit bonus">✎</a></td>
       </tr>
       {% endfor %}
     </tbody>

@@ -2,7 +2,9 @@
 {% from "_macros.html" import sortable %}
 {% block title %}Sessions · Slot Tracker{% endblock %}
 {% block content %}
-<h1>Sessions</h1>
+<h1>Sessions
+  <a class="small" href="/export/sessions" style="font-weight:400">export CSV</a>
+</h1>
 <p class="muted small">Deposit, cashout, net — the only place real profit or loss is tracked.
   Running total always accumulates oldest to newest, whatever the table is sorted by.</p>
 

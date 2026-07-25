@@ -34,6 +34,8 @@ def update_bonus(
     played_on: date | None,
     bet: Decimal,
     win: Decimal,
+    cost: Decimal | None = None,
+    bought: bool | None = None,
     notes: str | None = None,
     replay_url: str | None = None,
     notable: bool = False,
@@ -54,6 +56,8 @@ def update_bonus(
     bonus.played_on = played_on
     bonus.bet = bet
     bonus.win = win
+    bonus.cost = cost if bought else None
+    bonus.bought = bought
     bonus.notes = notes or None
     bonus.replay_url = replay_url or None
     bonus.notable = notable
@@ -78,6 +82,8 @@ def create_bonus(
     played_on: date,
     bet: Decimal,
     win: Decimal,
+    cost: Decimal | None = None,
+    bought: bool | None = None,
     notes: str | None = None,
     replay_url: str | None = None,
     notable: bool = False,
@@ -89,6 +95,10 @@ def create_bonus(
         played_on=played_on,
         bet=bet,
         win=win,
+        # A natural bonus has no buy price; keeping cost NULL there stops
+        # cost_multiplier from claiming a return that was never paid for.
+        cost=cost if bought else None,
+        bought=bought,
         notes=notes or None,
         replay_url=replay_url or None,
         notable=notable,
@@ -110,8 +120,13 @@ LOG_SORTS = {
     "bet": Bonus.bet,
     "win": Bonus.win,
     "x": Bonus.multiplier,
+    "cost": Bonus.cost,
+    "costx": Bonus.cost_multiplier,
     "notes": Bonus.notes,
 }
+
+# Values accepted by the log's provenance filter.
+PROVENANCE = ("bought", "natural", "unknown")
 
 DEFAULT_LOG_SORT = Sort(key="date", descending=True)
 
@@ -126,6 +141,25 @@ BONUS_ROW_SORTS = {
 }
 
 DEFAULT_BONUS_ROW_SORT = Sort(key="date", descending=True)
+
+
+@dataclass(frozen=True)
+class LogFilters:
+    """Parsed log filters, shared by the log view and the CSV export so both
+    always narrow the data the same way. Routers parse raw query strings into
+    this; services only ever see typed values."""
+
+    q: str | None = None
+    date_from: date | None = None
+    date_to: date | None = None
+    bet: Decimal | None = None
+    band: str | None = None
+    notable: bool = False
+    suspect: bool = False
+    has_replay: bool = False
+    # "bought" | "natural" | "unknown" | None. "unknown" is a real, useful filter:
+    # it isolates the imported rows whose provenance was never recorded.
+    provenance: str | None = None
 
 
 @dataclass
@@ -167,20 +201,14 @@ class LogPage:
 def query_log(
     session: Session,
     *,
-    q: str | None = None,
-    date_from: date | None = None,
-    date_to: date | None = None,
-    bet: Decimal | None = None,
-    band: str | None = None,
-    notable: bool = False,
-    suspect: bool = False,
-    has_replay: bool = False,
+    filters: LogFilters | None = None,
     sort: Sort | None = None,
     limit: int = 50,
     offset: int = 0,
 ) -> LogPage:
+    filters = filters or LogFilters()
     sort = sort or DEFAULT_LOG_SORT
-    conditions = _conditions(q, date_from, date_to, bet, band, notable, suspect, has_replay)
+    conditions = log_conditions(filters)
 
     rows_stmt = (
         select(Bonus, Game.name)
@@ -217,39 +245,39 @@ def query_log(
     )
 
 
-def _conditions(
-    q: str | None,
-    date_from: date | None,
-    date_to: date | None,
-    bet: Decimal | None,
-    band: str | None,
-    notable: bool,
-    suspect: bool,
-    has_replay: bool,
-) -> list[Any]:
+def log_conditions(filters: LogFilters) -> list[Any]:
+    """WHERE clauses for a set of log filters. Public because the CSV export
+    reuses it — an export that ignored the active filters would contradict the
+    UI it sits in."""
     conditions: list[Any] = []
-    if q:
+    if filters.q:
         # Search game name *and* notes — thousands of imported rows carry notes
         # that are otherwise only visible on the edit form.
-        pattern = f"%{q}%"
+        pattern = f"%{filters.q}%"
         conditions.append(or_(Game.name.ilike(pattern), Bonus.notes.ilike(pattern)))
-    if date_from is not None:
-        conditions.append(Bonus.played_on >= date_from)
-    if date_to is not None:
-        conditions.append(Bonus.played_on <= date_to)
-    if bet is not None:
-        conditions.append(Bonus.bet == bet)
-    if band:
-        bounds = band_bounds(band)
+    if filters.date_from is not None:
+        conditions.append(Bonus.played_on >= filters.date_from)
+    if filters.date_to is not None:
+        conditions.append(Bonus.played_on <= filters.date_to)
+    if filters.bet is not None:
+        conditions.append(Bonus.bet == filters.bet)
+    if filters.band:
+        bounds = band_bounds(filters.band)
         if bounds is not None:
             lo, hi = bounds
             conditions.append(Bonus.multiplier >= lo)
             if hi is not None:
                 conditions.append(Bonus.multiplier < hi)
-    if notable:
+    if filters.notable:
         conditions.append(Bonus.notable.is_(True))
-    if suspect:
+    if filters.suspect:
         conditions.append(Bonus.date_suspect.is_(True))
-    if has_replay:
+    if filters.has_replay:
         conditions.append(Bonus.replay_url.is_not(None))
+    if filters.provenance == "bought":
+        conditions.append(Bonus.bought.is_(True))
+    elif filters.provenance == "natural":
+        conditions.append(Bonus.bought.is_(False))
+    elif filters.provenance == "unknown":
+        conditions.append(Bonus.bought.is_(None))
     return conditions

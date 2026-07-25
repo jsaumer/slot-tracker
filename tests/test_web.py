@@ -109,12 +109,17 @@ def test_add_bonus_inserts_and_flashes(client: TestClient) -> None:
 
 
 def test_add_bonus_rejects_bad_input(client: TestClient) -> None:
+    """Asserts the *rendered* error, not just the status. Checking only the code
+    passed even when FastAPI rejected the request itself and the handler never
+    ran, which hid the raw-JSON response the user would have seen."""
     resp = client.post(
         "/bonus",
         data={"game": "", "bet": "0", "win": "-5"},
         headers={"HX-Request": "true"},
     )
     assert resp.status_code == 422
+    assert "Enter a game" in resp.text
+    assert "text/html" in resp.headers["content-type"]
 
 
 def test_log_filters_by_game(client: TestClient) -> None:
@@ -193,11 +198,18 @@ def test_unknown_session_404(client: TestClient) -> None:
         "/hunts?sort=net&dir=asc",
         "/sessions?sort=net&dir=desc",
         "/dashboard?ysort=won&ydir=asc&bsort=bet&bdir=desc",
+        "/dashboard?date_from=2024-01-01&date_to=2024-12-31",
+        "/dashboard?date_from=2024-01-01",
         "/hunts/1?sort=win&dir=asc",
         # New log filters.
         "/log?notable=1",
         "/log?has_replay=1",
         "/log?suspect=1",
+        "/log?provenance=bought",
+        "/log?provenance=natural",
+        "/log?provenance=unknown",
+        "/log?sort=cost&dir=desc",
+        "/log?sort=costx&dir=asc",
         "/log?q=Fruitz&sort=bet&dir=asc&notable=1",
     ],
 )
@@ -229,6 +241,124 @@ def test_log_shows_filtered_summary(client: TestClient) -> None:
     resp = client.get("/log")
     assert "bonuses" in resp.text
     assert "won" in resp.text
+
+
+def test_hunt_edit_page_renders_and_updates(client: TestClient) -> None:
+    assert client.get("/hunts/1/edit").status_code == 200
+    resp = client.post(
+        "/hunts/1",
+        data={
+            "label": "Renamed Hunt",
+            "hunt_date": "2024-03-01",
+            "start_balance": "500",
+            "end_balance": "700",
+            "end_convention": "after_opening",
+            "status": "open",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "Renamed Hunt" in client.get("/hunts/1").text
+
+
+def test_hunt_edit_unknown_404(client: TestClient) -> None:
+    assert client.get("/hunts/9999/edit").status_code == 404
+
+
+def test_hunt_add_bonus_reports_errors_instead_of_redirecting(client: TestClient) -> None:
+    resp = client.post(
+        "/hunts/1/bonus",
+        data={"game": "", "bet": "0", "win": "-1"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 422
+    assert "Enter a game" in resp.text
+
+
+def test_export_respects_filters(client: TestClient) -> None:
+    everything = client.get("/export").text.splitlines()
+    filtered = client.get("/export", params={"q": "Fruitz"}).text.splitlines()
+    assert len(filtered) < len(everything)
+    assert all("Fruitz" in line for line in filtered[1:])
+
+
+@pytest.mark.parametrize("path", ["/export/hunts", "/export/sessions"])
+def test_extra_exports_are_csv(client: TestClient, path: str) -> None:
+    resp = client.get(path)
+    assert resp.status_code == 200
+    assert "text/csv" in resp.headers["content-type"]
+
+
+def test_dashboard_shows_the_provenance_split(client: TestClient) -> None:
+    resp = client.get("/dashboard")
+    assert "Bought vs natural" in resp.text
+    assert "Unknown" in resp.text  # imported rows must be represented, not hidden
+
+
+def test_dashboard_date_filter_narrows_the_totals(client: TestClient) -> None:
+    all_time = client.get("/dashboard").text
+    scoped = client.get("/dashboard", params={"date_from": "2099-01-01"}).text
+    assert all_time != scoped
+    # A future-only window matches nothing, so the headline count collapses.
+    assert ">0<" in scoped
+
+
+def test_adding_a_bought_bonus_records_cost_and_return(client: TestClient) -> None:
+    resp = client.post(
+        "/bonus",
+        data={
+            "game": "Buy Test",
+            "bet": "0.20",
+            "win": "250",
+            "played_on": "2024-07-01",
+            "cost": "20",
+            "bought": "true",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert resp.status_code == 200
+    with SessionLocal() as s:
+        bonus = s.scalar(select(Bonus).where(Bonus.cost == Decimal("20.00")))
+        assert bonus is not None
+        assert bonus.bought is True
+        assert bonus.cost_multiplier == Decimal("12.5")
+
+
+def test_adding_without_the_buy_checkbox_stores_no_cost(client: TestClient) -> None:
+    resp = client.post(
+        "/bonus",
+        data={
+            "game": "Natural Test",
+            "bet": "0.20",
+            "win": "33",
+            "played_on": "2024-07-02",
+            "cost": "20",  # ignored: the checkbox was not ticked
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert resp.status_code == 200
+    with SessionLocal() as s:
+        bonus = s.scalar(select(Bonus).where(Bonus.win == Decimal("33.00")))
+        assert bonus.bought is False
+        assert bonus.cost is None
+
+
+def test_merge_suggestions_page_renders(client: TestClient) -> None:
+    """Also guards route ordering: /games/merges must be registered before
+    /games/{game_id}, which parses its segment as an int and would reject it."""
+    resp = client.get("/games/merges")
+    assert resp.status_code == 200
+    assert "Duplicate games" in resp.text
+
+
+def test_applying_a_suggestion_redirects_back_to_the_list(client: TestClient) -> None:
+    resp = client.post(
+        "/games/merges",
+        data={"source": "Gates of Olympus", "target": "Sugar Rush"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert resp.headers["location"] == "/games/merges"
 
 
 def test_games_merge_redirects(client: TestClient) -> None:

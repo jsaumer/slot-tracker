@@ -55,6 +55,34 @@ def games(
     return render(request, "games.html", ctx)
 
 
+# Registered before /games/{game_id}: that route parses its path segment as an
+# int, so "merges" would be rejected as invalid rather than falling through.
+@router.get("/games/merges")
+def merge_suggestions(request: Request, session: Session = Depends(get_session)):
+    suggestions = game_svc.suggest_merges(session)
+    ctx = {
+        "certain": [s for s in suggestions if s.certain],
+        "likely": [s for s in suggestions if not s.certain],
+    }
+    return render(request, "games/merges.html", ctx)
+
+
+@router.post("/games/merges")
+def apply_merge_suggestion(
+    request: Request,
+    session: Session = Depends(get_session),
+    source: str = Form(""),
+    target: str = Form(""),
+):
+    src = game_svc.game_by_name(session, source)
+    dst = game_svc.game_by_name(session, target)
+    if src is not None and dst is not None:
+        game_svc.merge_games(session, src.id, dst.id)
+        session.commit()
+    # Back to the suggestions list so several merges can be worked through.
+    return RedirectResponse("/games/merges", status_code=303)
+
+
 @router.get("/games/{game_id}")
 def game_detail(request: Request, game_id: int, session: Session = Depends(get_session)):
     detail = game_svc.game_detail(session, game_id)

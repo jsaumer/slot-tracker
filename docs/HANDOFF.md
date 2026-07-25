@@ -77,12 +77,33 @@ uncovered spelling variants. Mean X ≈ 118 (main-log-only ≈ 116, matching the
 - Notable / replay-URL management surface.
 
 **Reporting**
-- Richer dashboard (date-range filter, trend over time, provider/bet cross-tabs); the
-  current bands/tables are deliberately minimal. **Still open** — the dashboard's
-  full-table Python scan (`build_dashboard` loads every bonus row per render) was
-  deliberately left alone in v0.3.0; pushing it into SQL touches the unit-tested pure
-  helpers in `aggregate.py` and needs the SQL-vs-helper agreement test to go with it.
-- Export for hunts and sessions (only the bonus log exports today).
+- ~~Richer dashboard, dashboard SQL push-down, hunt/session export~~ — **done in
+  v0.4.0.** Remaining reporting ideas: provider cross-tabs (needs `game.provider`
+  populated first) and per-game bought/natural splits.
+
+**Shipped in v0.4.0**
+- Hunt edit / reopen / delete (delete detaches bonuses), real validation errors on the
+  hunt entry form, and form parity with the main one. Closing a hunt is no longer a
+  one-way door.
+- `/export` honours the log's filters via shared `LogFilters` + `log_conditions`;
+  added `/export/hunts` and `/export/sessions`.
+- `/games/merges` — guided duplicate detection (difflib, two confidence tiers) with a
+  sequel guard so numbered entries in a series are never suggested. This is the tool
+  for finally closing the game-count drift; the cleanup itself is an operator pass.
+- **Bonus cost tracking** (migration `0005`): `cost`, three-state `bought`, and
+  generated `cost_multiplier`. Log columns + provenance filter, export columns, and a
+  bought/natural/unknown split on the dashboard.
+- Dashboard aggregates moved into SQL, plus date-range filter and monthly trend.
+
+**Still open / notable gaps**
+- `game.provider` remains unpopulated — blocks provider breakdowns.
+- Hunt↔session linking still has no UI (`hunt.session_id` exists).
+- Base-game stake inference: `bonus.cost` covers bonus *buys*, but the spend between
+  natural triggers is still only visible at session level.
+- The pre-existing `bonus.multiplier` generated column shares the SQLite
+  integer-division quirk documented on `cost_multiplier`. Harmless in production
+  (PostgreSQL is exact); left alone because altering a generated column means
+  dropping and re-adding it.
 
 **Shipped in v0.3.0**
 - Click-to-sort on every table column (both directions) via `app/services/sorting.py`

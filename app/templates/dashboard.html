@@ -4,6 +4,29 @@
 {% block content %}
 <h1>Dashboard</h1>
 
+<form class="card filters" method="get" action="/dashboard">
+  <input type="hidden" name="ysort" value="{{ year_sort.key }}">
+  <input type="hidden" name="ydir" value="{{ year_sort.direction }}">
+  <input type="hidden" name="bsort" value="{{ bet_sort.key }}">
+  <input type="hidden" name="bdir" value="{{ bet_sort.direction }}">
+  <div><label>From</label><input type="date" name="date_from" value="{{ filters.date_from }}"></div>
+  <div><label>To</label><input type="date" name="date_to" value="{{ filters.date_to }}"></div>
+  <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn" type="submit">Apply</button></div>
+  <div class="flags" style="gap:10px">
+    {% for p in periods %}
+    <a class="btn secondary{% if p.active %} active{% endif %}" href="{{ p.url }}">{{ p.label }}</a>
+    {% endfor %}
+  </div>
+</form>
+
+{% if d.is_filtered and d.undated_excluded %}
+<p class="muted small">
+  Showing {{ d.date_from|local_date }} – {{ d.date_to|local_date }}.
+  <strong>{{ "{:,}".format(d.undated_excluded) }}</strong> bonuses have no recorded date and are
+  excluded from every dated view, so these totals are lower than the all-time figures.
+</p>
+{% endif %}
+
 <div class="tiles">
   <div class="tile"><div class="k">Bonuses</div><div class="v">{{ "{:,}".format(d.total_bonuses) }}</div></div>
   <div class="tile"><div class="k">Total won</div><div class="v">{{ d.total_win|money }}</div></div>
@@ -26,6 +49,52 @@
   </div>
   {% if d.suspect_count %}<p class="muted small">{{ d.suspect_count }} rows flagged with a suspect (pre-2021) date.</p>{% endif %}
 </div>
+
+<div class="card">
+  <h2>Bought vs natural</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Provenance</th><th class="num">Bonuses</th><th class="num">Won</th>
+          <th class="num">Spent on buys</th><th class="num">Net</th><th class="num">Mean X</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in d.provenance %}
+        <tr>
+          <td>{% if p.count %}<a href="/log?provenance={{ p.key }}">{{ p.label }}</a>{% else %}{{ p.label }}{% endif %}</td>
+          <td class="num">{{ "{:,}".format(p.count) }}</td>
+          <td class="num">{{ p.total_win|money }}</td>
+          <td class="num">{{ p.total_cost|money }}</td>
+          <td class="num {% if p.net is not none and p.net < 0 %}neg{% elif p.net is not none %}pos{% endif %}">{{ p.net|signed_money if p.net is not none else "—" }}</td>
+          <td class="num">{{ p.mean_multiplier|multiplier }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">
+    <em>Unknown</em> is every bonus whose provenance was never recorded — not an error, just data the
+    original source never captured. Mean X across bought and natural bonuses is not comparable: a buy
+    starts from a much larger stake.
+  </p>
+</div>
+
+{% if d.by_month %}
+<div class="card">
+  <h2>Winnings by month <span class="muted small">· most recent {{ d.by_month|length }}</span></h2>
+  <div class="bars">
+    {% for m in d.by_month %}
+    <div class="bar-row">
+      <span class="muted small">{{ m.label }}</span>
+      <span class="bar"><span style="width: {{ (m.total_win / max_month * 100) if max_month else 0 }}%"></span></span>
+      <span class="num small">{{ m.total_win|money }} · {{ "{:,}".format(m.count) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="row" style="flex-wrap:wrap;align-items:flex-start;">
   <div class="card" style="flex:1 1 280px;">

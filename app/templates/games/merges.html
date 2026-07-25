@@ -1,0 +1,70 @@
+{% extends layout %}
+{% block title %}Duplicate games · Slot Tracker{% endblock %}
+
+{% macro pair(s, tier) %}
+<tr>
+  <td>{{ s.source.name }} <span class="muted small">· {{ "{:,}".format(s.source.count) }}</span></td>
+  <td>{{ s.target.name }} <span class="muted small">· {{ "{:,}".format(s.target.count) }}</span></td>
+  <td class="num">{{ '%.0f'|format(s.similarity * 100) }}%</td>
+  <td>
+    <div style="display:flex;gap:6px;">
+      <form method="post" action="/games/merges" style="margin:0"
+            onsubmit="return confirm('Merge “{{ s.source.name }}” into “{{ s.target.name }}”?');">
+        <input type="hidden" name="source" value="{{ s.source.name }}">
+        <input type="hidden" name="target" value="{{ s.target.name }}">
+        <button class="btn" type="submit" title="keep {{ s.target.name }}">Keep right →</button>
+      </form>
+      <form method="post" action="/games/merges" style="margin:0"
+            onsubmit="return confirm('Merge “{{ s.target.name }}” into “{{ s.source.name }}”?');">
+        <input type="hidden" name="source" value="{{ s.target.name }}">
+        <input type="hidden" name="target" value="{{ s.source.name }}">
+        <button class="btn secondary" type="submit" title="keep {{ s.source.name }}">← Keep left</button>
+      </form>
+    </div>
+  </td>
+</tr>
+{% endmacro %}
+
+{% block content %}
+<p class="small"><a href="/games">← All games</a></p>
+<h1>Duplicate games</h1>
+<p class="muted small">
+  Suggested merges. The survivor defaults to whichever spelling has more bonuses, but the more common
+  spelling is not always the correct one — use <em>Keep left</em> to reverse it. Merging moves every
+  bonus onto the survivor and records the other spelling as an alias, so future entry auto-corrects.
+  Sequels are deliberately excluded: <em>Money Train 2</em> and <em>Money Train 3</em> are different games.
+</p>
+
+<div class="card">
+  <h2>Certain <span class="muted small">· identical apart from case, spacing or punctuation</span></h2>
+  {% if certain %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Spelling</th><th>Spelling</th><th class="num">Match</th><th></th></tr></thead>
+      <tbody>{% for s in certain %}{{ pair(s, 'certain') }}{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nothing found.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Likely <span class="muted small">· similar spellings, check before merging</span></h2>
+  {% if likely %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Spelling</th><th>Spelling</th><th class="num">Match</th><th></th></tr></thead>
+      <tbody>{% for s in likely %}{{ pair(s, 'likely') }}{% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">Nothing found.</p>
+  {% endif %}
+</div>
+
+<p class="muted small">
+  Merging fixes stored data and future entry. A full re-import still uses the code alias map, so
+  permanent fixes also belong in <code>app/importer/aliases.py</code>.
+</p>
+{% endblock %}

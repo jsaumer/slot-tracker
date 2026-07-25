@@ -19,7 +19,7 @@ version: "3.9"
 
 services:
   app:
-    image: ghcr.io/OWNER/slot-tracker:0.3.3
+    image: ghcr.io/OWNER/slot-tracker:0.4.0
     environment:
       DATABASE_URL: postgresql+psycopg://slottracker:${SLOT_TRACKER_DB_PASSWORD}@postgres:5432/slottracker
       SECRET_KEY: ${SLOT_TRACKER_SECRET_KEY}
