@@ -1,0 +1,48 @@
+{% extends layout %}
+{% from "_macros.html" import sortable %}
+{% block title %}Sessions · Slot Tracker{% endblock %}
+{% block content %}
+<h1>Sessions</h1>
+<p class="muted small">Deposit, cashout, net — the only place real profit or loss is tracked.
+  Running total always accumulates oldest to newest, whatever the table is sorted by.</p>
+
+<form class="card filters" method="post" action="/sessions">
+  <div><label>Site</label><input name="site" autocomplete="off"></div>
+  <div><label>Deposit</label><input name="deposit" inputmode="decimal"></div>
+  <div><label>Cashout</label><input name="cashout" inputmode="decimal"></div>
+  <div><label>Started</label><input type="date" name="started_at"></div>
+  <div><label>Ended</label><input type="date" name="ended_at"></div>
+  <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn" type="submit">Add session</button></div>
+</form>
+
+{% if sessions %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        {{ sortable("started", "Started", sort, sort_url) }}
+        {{ sortable("site", "Site", sort, sort_url) }}
+        {{ sortable("deposit", "Deposit", sort, sort_url, num=True) }}
+        {{ sortable("cashout", "Cashout", sort, sort_url, num=True) }}
+        {{ sortable("net", "Net", sort, sort_url, num=True) }}
+        {{ sortable("running", "Running", sort, sort_url, num=True) }}
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in sessions %}
+      <tr>
+        <td><a href="/sessions/{{ v.session.id }}">{{ v.session.started_at|local_datetime }}</a></td>
+        <td>{{ v.session.site or "—" }}</td>
+        <td class="num">{{ v.session.deposit|money }}</td>
+        <td class="num">{{ v.session.cashout|money }}</td>
+        <td class="num {% if v.session.net is not none and v.session.net < 0 %}neg{% elif v.session.net is not none %}pos{% endif %}">{{ v.session.net|signed_money }}</td>
+        <td class="num {% if v.running_total < 0 %}neg{% elif v.running_total > 0 %}pos{% endif %}">{{ v.running_total|signed_money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card empty">No sessions logged yet.</div>
+{% endif %}
+{% endblock %}

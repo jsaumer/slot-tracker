@@ -1,0 +1,89 @@
+{% extends layout %}
+{% from "_macros.html" import sortable %}
+{% set target = "#log-content" %}
+{% block title %}Log · Slot Tracker{% endblock %}
+{% block content %}
+<div id="log-content">
+  <h1>Log <span class="muted small">· {{ "{:,}".format(page.total) }} bonuses</span></h1>
+
+  <form class="card filters" method="get" action="/log"
+        hx-get="/log" hx-target="#log-content" hx-swap="outerHTML" hx-push-url="true">
+    {# Keep the active sort when re-filtering. #}
+    <input type="hidden" name="sort" value="{{ sort.key }}">
+    <input type="hidden" name="dir" value="{{ sort.direction }}">
+    <div><label>Game or notes</label><input name="q" value="{{ filters.q }}" autocomplete="off"></div>
+    <div><label>From</label><input type="date" name="date_from" value="{{ filters.date_from }}"></div>
+    <div><label>To</label><input type="date" name="date_to" value="{{ filters.date_to }}"></div>
+    <div><label>Bet</label><input name="bet" inputmode="decimal" value="{{ filters.bet }}"></div>
+    <div>
+      <label>X band</label>
+      <select name="band">
+        <option value="">Any</option>
+        {% for key, label, lo, hi in bands %}
+        <option value="{{ key }}" {% if filters.band == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flags">
+      <label><input type="checkbox" name="notable" value="1" {% if filters.notable %}checked{% endif %}> ★ Notable</label>
+      <label><input type="checkbox" name="has_replay" value="1" {% if filters.has_replay %}checked{% endif %}> ▶ Has replay</label>
+      <label><input type="checkbox" name="suspect" value="1" {% if filters.suspect %}checked{% endif %}> ? Suspect date</label>
+    </div>
+    <div style="flex:0 0 auto;display:flex;gap:8px;align-items:end;">
+      <button class="btn" type="submit">Search</button>
+      <a class="btn secondary" href="/export">Export CSV</a>
+    </div>
+  </form>
+
+  {% if page.rows %}
+  <div class="card summary">
+    <span><b>{{ "{:,}".format(page.summary.count) }}</b> bonuses</span>
+    <span><b>{{ page.summary.total_win|money }}</b> won</span>
+    <span>mean <b>{{ page.summary.mean_multiplier|multiplier }}</b></span>
+    <span>best <b>{{ page.summary.best_multiplier|multiplier }}</b></span>
+  </div>
+
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          {{ sortable("date", "Date", sort, sort_url, target=target) }}
+          {{ sortable("game", "Game", sort, sort_url, target=target) }}
+          {{ sortable("bet", "Bet", sort, sort_url, num=True, target=target) }}
+          {{ sortable("win", "Win", sort, sort_url, num=True, target=target) }}
+          {{ sortable("x", "X", sort, sort_url, num=True, target=target) }}
+          {{ sortable("notes", "Notes", sort, sort_url, target=target) }}
+          <th></th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in page.rows %}
+        <tr>
+          <td>{{ r.bonus.played_on|local_date }}{% if r.bonus.date_suspect %} <span class="badge suspect" title="date before 2021">?</span>{% endif %}</td>
+          <td>{{ r.game_name }}{% if r.bonus.notable %} <span class="badge notable" title="notable hit">★</span>{% endif %}</td>
+          <td class="num">{{ r.bonus.bet|money }}</td>
+          <td class="num">{{ r.bonus.win|money }}</td>
+          <td class="num">{{ r.bonus.multiplier|multiplier }}</td>
+          <td class="notes" title="{{ r.bonus.notes or '' }}">{{ r.bonus.notes or "" }}</td>
+          <td>{% if r.bonus.replay_url %}<a href="{{ r.bonus.replay_url }}" target="_blank" rel="noopener">▶</a>{% endif %}</td>
+          <td><a href="/bonus/{{ r.bonus.id }}/edit" title="edit" aria-label="edit bonus">✎</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row" style="justify-content:space-between;align-items:center;">
+    {% if prev_url %}
+      <a class="btn secondary" href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#log-content" hx-swap="outerHTML" hx-push-url="true">← Prev</a>
+    {% else %}<span></span>{% endif %}
+    <span class="muted small">{{ page.offset + 1 }}–{{ page.offset + page.rows|length }} of {{ "{:,}".format(page.total) }}</span>
+    {% if next_url %}
+      <a class="btn secondary" href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#log-content" hx-swap="outerHTML" hx-push-url="true">Next →</a>
+    {% else %}<span></span>{% endif %}
+  </div>
+  {% else %}
+  <div class="card empty">No bonuses match those filters.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{#
+  Shared table macros.
+
+  `sortable` renders a clickable column header. Pass the surface's Sort object and
+  its `sort_url(key)` callable (built in the router). Give `target` to swap a
+  fragment over HTMX; omit it for a plain link on small tables where a full
+  render is cheap.
+#}
+{% macro sortable(key, label, sort, sort_url, num=False, target=None) -%}
+<th{% if num %} class="num"{% endif %}>
+  <a class="sort{% if sort.key == key %} active{% endif %}" href="{{ sort_url(key) }}"
+     {%- if target %} hx-get="{{ sort_url(key) }}" hx-target="{{ target }}" hx-swap="outerHTML" hx-push-url="true"{% endif %}>
+    {{- label }}<span class="sort-ind">{{ sort.indicator(key) }}</span>
+  </a>
+</th>
+{%- endmacro %}

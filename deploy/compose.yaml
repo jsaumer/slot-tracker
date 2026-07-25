@@ -1,0 +1,112 @@
+version: "3.9"
+
+# =============================================================================
+# slot-tracker — example Docker Swarm stack.
+#
+# A working reference, not a drop-in: replace OWNER, the hostname, the certificate
+# resolver, and the volume configuration to match your environment.
+#
+# Assumes an external overlay network with a Traefik instance attached. If you use
+# a different proxy, drop the labels and expose the service however that proxy
+# expects. THERE IS NO AUTHENTICATION IN THIS APP — keep it on a private network.
+#
+# Postgres 18+ mounts at /var/lib/postgresql, NOT /var/lib/postgresql/data.
+# Mounting the old path silently yields an empty cluster.
+#
+# Alembic migrations run at app startup. replicas: 1 with stop-first updates means
+# there is never a concurrent migration. Do not raise replicas.
+# =============================================================================
+
+services:
+  app:
+    image: ghcr.io/OWNER/slot-tracker:0.3.0
+    environment:
+      DATABASE_URL: postgresql+psycopg://slottracker:${SLOT_TRACKER_DB_PASSWORD}@postgres:5432/slottracker
+      SECRET_KEY: ${SLOT_TRACKER_SECRET_KEY}
+      APP_URL: https://slots.example.com
+      TZ: America/Chicago
+      LOG_LEVEL: info
+      RUN_MIGRATIONS_ON_STARTUP: "true"
+    volumes:
+      # Optional: read-only source workbook for the one-shot importer. Safe on a
+      # network share — static file, read-only, no locking. Remove if unused.
+      - /srv/slot-tracker/import:/import:ro
+    networks:
+      - proxy
+      - slot-tracker-internal
+    healthcheck:
+      # stdlib only — the runtime image has no curl or wget.
+      test: ["CMD-SHELL", "python -c \"import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).status == 200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - "node.role==worker"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.swarm.network=proxy"
+        - "traefik.http.routers.slot-tracker.rule=Host(`slots.example.com`)"
+        - "traefik.http.routers.slot-tracker.entrypoints=websecure"
+        - "traefik.http.routers.slot-tracker.tls=true"
+        - "traefik.http.routers.slot-tracker.tls.certresolver=letsencrypt"
+        - "traefik.http.services.slot-tracker.loadbalancer.server.port=8000"
+        # Recommended: put a forward-auth middleware in front of this app rather
+        # than adding authentication to it.
+        # - "traefik.http.routers.slot-tracker.middlewares=forward-auth@file"
+
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_DB: slottracker
+      POSTGRES_USER: slottracker
+      POSTGRES_PASSWORD: ${SLOT_TRACKER_DB_PASSWORD}
+      TZ: America/Chicago
+    volumes:
+      # PG18+: mount the parent, not .../data.
+      #
+      # This example uses a named local volume. If you switch to a network share,
+      # add `user: "1000:1000"` to this service, pre-create the directory with
+      # that ownership, and read the storage trade-offs in DEPLOY.md first.
+      - slot-tracker-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slottracker -d slottracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - slot-tracker-internal
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: stop-first
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          # A local volume lives on one node. Pin the service to that node, or the
+          # scheduler can move Postgres elsewhere and create a fresh empty volume
+          # — the app then comes up healthy against an empty database.
+          - "node.role==worker"
+
+networks:
+  proxy:
+    external: true
+  slot-tracker-internal:
+    driver: overlay
+    internal: true
+    attachable: true
+
+volumes:
+  slot-tracker-pgdata:

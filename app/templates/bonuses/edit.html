@@ -1,0 +1,85 @@
+{% extends layout %}
+{% block title %}Edit bonus · Slot Tracker{% endblock %}
+{% block content %}
+<div id="edit-root">
+  <p class="small"><a href="/log">← Back to log</a></p>
+  <h1>Edit bonus <span class="muted small">· #{{ bonus.id }}</span></h1>
+  {% if error %}<div class="flash" style="background:color-mix(in srgb,var(--danger) 20%,transparent)">{{ error }}</div>{% endif %}
+  {% if bonus.import_ref %}
+  <p class="muted small">Imported row — a re-import will overwrite edits to game, date, bet, win, notes, replay, and notable.</p>
+  {% endif %}
+
+  <form class="stack card" method="post" action="/bonus/{{ bonus.id }}">
+    <div>
+      <label for="game">Game</label>
+      <input id="game" name="game" list="game-options" autocomplete="off" required
+             value="{{ game_name }}">
+      <datalist id="game-options">
+        {% for g in games %}<option value="{{ g }}"></option>{% endfor %}
+      </datalist>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="bet">Bet</label>
+        <input id="bet" name="bet" inputmode="decimal" value="{{ bonus.bet }}" required>
+      </div>
+      <div>
+        <label for="win">Win</label>
+        <input id="win" name="win" inputmode="decimal" value="{{ bonus.win }}" required>
+      </div>
+    </div>
+
+    <div class="readout" id="mult">{{ bonus.multiplier|multiplier }}</div>
+
+    <div class="row">
+      <div>
+        <label for="played_on">Date</label>
+        <input id="played_on" name="played_on" type="date"
+               value="{{ bonus.played_on.isoformat() if bonus.played_on else '' }}">
+      </div>
+      <div style="display:flex;align-items:end;">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;">
+          <input type="checkbox" name="notable" style="width:auto;" {% if bonus.notable %}checked{% endif %}> Notable hit
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label for="replay_url">Replay URL <span class="muted small">(optional)</span></label>
+      <input id="replay_url" name="replay_url" autocomplete="off" value="{{ bonus.replay_url or '' }}">
+    </div>
+
+    <div>
+      <label for="notes">Notes <span class="muted small">(optional)</span></label>
+      <input id="notes" name="notes" autocomplete="off" value="{{ bonus.notes or '' }}">
+    </div>
+
+    <button class="btn block" type="submit">Save changes</button>
+  </form>
+
+  <form class="stack" method="post" action="/bonus/{{ bonus.id }}/delete"
+        onsubmit="return confirm('Delete this bonus? This cannot be undone.');">
+    <button class="btn secondary block" type="submit"
+            style="color:var(--danger);border-color:var(--danger)">Delete bonus</button>
+  </form>
+
+  <script>
+    (function () {
+      var bet = document.getElementById('bet');
+      var win = document.getElementById('win');
+      var out = document.getElementById('mult');
+      function update() {
+        var b = parseFloat(bet.value), w = parseFloat(win.value);
+        if (b > 0 && !isNaN(w) && w >= 0) {
+          out.textContent = (w / b).toFixed(2).replace(/\.?0+$/, '') + 'x';
+        } else {
+          out.textContent = '—';
+        }
+      }
+      bet.addEventListener('input', update);
+      win.addEventListener('input', update);
+    })();
+  </script>
+</div>
+{% endblock %}

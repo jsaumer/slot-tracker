@@ -1,0 +1,83 @@
+{% extends layout %}
+{% from "_macros.html" import sortable %}
+{% block title %}{{ view.hunt.label or ("Hunt " ~ view.hunt.id) }} · Slot Tracker{% endblock %}
+{% block content %}
+<p class="small"><a href="/hunts">← All hunts</a></p>
+<h1>{{ view.hunt.label or ("Hunt " ~ view.hunt.id) }}
+  <span class="badge {{ view.hunt.status }}">{{ view.hunt.status }}</span>
+</h1>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Start</div><div class="v">{{ view.hunt.start_balance|money }}</div></div>
+  <div class="tile"><div class="k">End</div><div class="v">{{ view.hunt.end_balance|money }}</div></div>
+  <div class="tile"><div class="k">Bonuses won</div><div class="v">{{ view.total_win|money }}</div></div>
+  <div class="tile"><div class="k">Cost</div><div class="v">{{ view.result.cost|money }}</div></div>
+  <div class="tile"><div class="k">Net</div><div class="v {% if view.result.net is not none and view.result.net < 0 %}neg{% elif view.result.net is not none %}pos{% endif %}">{{ view.result.net|signed_money }}</div></div>
+  <div class="tile"><div class="k">ROI</div><div class="v">{% if view.result.roi is not none %}{{ '%.1f'|format(view.result.roi * 100) }}%{% else %}—{% endif %}</div></div>
+</div>
+<p class="muted small">Convention: {{ view.hunt.end_convention }} · {{ view.bonus_count }} bonuses opened.</p>
+
+{% if view.hunt.status == 'open' %}
+<div class="card">
+  <h2>Add bonus to this hunt</h2>
+  <form class="stack" method="post" action="/hunts/{{ view.hunt.id }}/bonus">
+    <div>
+      <label for="hgame">Game</label>
+      <input id="hgame" name="game" list="game-options" autocomplete="off" required>
+      <datalist id="game-options">{% for g in games %}<option value="{{ g }}"></option>{% endfor %}</datalist>
+    </div>
+    <div class="row">
+      <div><label>Bet</label><input name="bet" inputmode="decimal" required></div>
+      <div><label>Win</label><input name="win" inputmode="decimal" required></div>
+      <div><label>Date</label><input type="date" name="played_on" value="{{ today }}"></div>
+    </div>
+    <button class="btn" type="submit">Add to hunt</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Close hunt</h2>
+  <form class="filters" method="post" action="/hunts/{{ view.hunt.id }}/close">
+    <div><label>End balance</label><input name="end_balance" inputmode="decimal"></div>
+    <div>
+      <label>End convention</label>
+      <select name="end_convention">
+        <option value="after_opening" {% if view.hunt.end_convention == 'after_opening' %}selected{% endif %}>after opening</option>
+        <option value="spin_end" {% if view.hunt.end_convention == 'spin_end' %}selected{% endif %}>spin end</option>
+      </select>
+    </div>
+    <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn" type="submit">Close hunt</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="card table-wrap">
+  <h2>Bonuses</h2>
+  {% if bonuses %}
+  <table>
+    <thead>
+      <tr>
+        {{ sortable("date", "Date", sort, sort_url) }}
+        {{ sortable("game", "Game", sort, sort_url) }}
+        {{ sortable("bet", "Bet", sort, sort_url, num=True) }}
+        {{ sortable("win", "Win", sort, sort_url, num=True) }}
+        {{ sortable("x", "X", sort, sort_url, num=True) }}
+      </tr>
+    </thead>
+    <tbody>
+      {% for bonus, name in bonuses %}
+      <tr>
+        <td>{{ bonus.played_on|local_date }}</td>
+        <td>{{ name }}{% if bonus.notable %} <span class="badge notable">★</span>{% endif %}</td>
+        <td class="num">{{ bonus.bet|money }}</td>
+        <td class="num">{{ bonus.win|money }}</td>
+        <td class="num">{{ bonus.multiplier|multiplier }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No bonuses opened yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

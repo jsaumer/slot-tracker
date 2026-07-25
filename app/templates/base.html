@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <title>{% block title %}Slot Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">🎰 Slot Tracker</a>
+    <nav class="nav">
+      <a href="/">Add</a>
+      <a href="/log">Log</a>
+      <a href="/dashboard">Stats</a>
+      <a href="/games">Games</a>
+      <a href="/hunts">Hunts</a>
+      <a href="/sessions">Sessions</a>
+    </nav>
+  </header>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

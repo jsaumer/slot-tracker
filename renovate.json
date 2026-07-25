@@ -1,0 +1,61 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "timezone": "America/Chicago",
+  "schedule": [
+    "* 6 * * 2,4"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Python base image and uv — patch auto-merge after a stability window",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python", "ghcr.io/astral-sh/uv"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "branch",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Python base image majors and minors need a manual look",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": ["major", "minor"],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "GitHub Actions — group and auto-merge",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "automerge": true,
+      "automergeType": "branch",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Python dependencies — group non-major bumps",
+      "matchManagers": ["pep621"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "python dependencies",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "SQLAlchemy and Alembic majors gate on the dashboard — schema tooling",
+      "matchManagers": ["pep621"],
+      "matchPackageNames": ["sqlalchemy", "alembic", "psycopg"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "renovate", "requires-data-migration"]
+    }
+  ]
+}

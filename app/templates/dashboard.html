@@ -1,0 +1,71 @@
+{% extends layout %}
+{% from "_macros.html" import sortable %}
+{% block title %}Stats · Slot Tracker{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Bonuses</div><div class="v">{{ "{:,}".format(d.total_bonuses) }}</div></div>
+  <div class="tile"><div class="k">Total won</div><div class="v">{{ d.total_win|money }}</div></div>
+  <div class="tile"><div class="k">Mean X</div><div class="v">{{ d.mean_multiplier|multiplier }}</div></div>
+  <div class="tile"><div class="k">Median X</div><div class="v">{{ d.median_multiplier|multiplier }}</div></div>
+  <div class="tile"><div class="k">Best X</div><div class="v">{{ d.best_multiplier|multiplier }}</div></div>
+  <div class="tile"><div class="k">Notable</div><div class="v">{{ d.notable_count }}</div></div>
+</div>
+
+<div class="card">
+  <h2>Multiplier distribution</h2>
+  <div class="bars">
+    {% for b in d.distribution %}
+    <div class="bar-row">
+      <span class="muted small">{{ b.label }}</span>
+      <span class="bar"><span style="width: {{ (b.count / max_band * 100) if max_band else 0 }}%"></span></span>
+      <span class="num small">{{ "{:,}".format(b.count) }} · {{ b.pct }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% if d.suspect_count %}<p class="muted small">{{ d.suspect_count }} rows flagged with a suspect (pre-2021) date.</p>{% endif %}
+</div>
+
+<div class="row" style="flex-wrap:wrap;align-items:flex-start;">
+  <div class="card" style="flex:1 1 280px;">
+    <h2>By year</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {{ sortable("year", "Year", year_sort, year_sort_url) }}
+            {{ sortable("count", "Bonuses", year_sort, year_sort_url, num=True) }}
+            {{ sortable("won", "Won", year_sort, year_sort_url, num=True) }}
+          </tr>
+        </thead>
+        <tbody>
+          {% for y in d.by_year %}
+          <tr><td>{{ y.year }}</td><td class="num">{{ "{:,}".format(y.count) }}</td><td class="num">{{ y.total_win|money }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="flex:1 1 280px;">
+    <h2>By bet size</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {{ sortable("bet", "Bet", bet_sort, bet_sort_url) }}
+            {{ sortable("count", "Bonuses", bet_sort, bet_sort_url, num=True) }}
+            {{ sortable("won", "Won", bet_sort, bet_sort_url, num=True) }}
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in d.by_bet %}
+          <tr><td>{{ b.bet|money }}</td><td class="num">{{ "{:,}".format(b.count) }}</td><td class="num">{{ b.total_win|money }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

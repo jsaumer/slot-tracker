@@ -1,0 +1,21 @@
+.git
+.github
+.venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.env
+.env.local
+*.ods
+*.xlsx
+*.csv
+data/
+docs/
+deploy/
+compose.dev.yaml
+DEPLOY.md
+CLAUDE.md
+# README.md is intentionally NOT ignored: pyproject declares
+# `readme = "README.md"`, so hatchling needs it in the build context to build
+# the app wheel (uv sync's project-install step). Excluding it fails the build.

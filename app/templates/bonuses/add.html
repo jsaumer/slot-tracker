@@ -1,0 +1,78 @@
+{% extends layout %}
+{% block title %}Add Bonus · Slot Tracker{% endblock %}
+{% block content %}
+<div id="add-root">
+  <h1>Add bonus</h1>
+  {% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+  {% if error %}<div class="flash" style="background:color-mix(in srgb,var(--danger) 20%,transparent)">{{ error }}</div>{% endif %}
+
+  <form class="stack card" method="post" action="/bonus"
+        hx-post="/bonus" hx-target="#add-root" hx-swap="outerHTML">
+    <div>
+      <label for="game">Game</label>
+      <input id="game" name="game" list="game-options" autocomplete="off" required
+             placeholder="Start typing…">
+      <datalist id="game-options">
+        {% for g in games %}<option value="{{ g }}"></option>{% endfor %}
+      </datalist>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="bet">Bet</label>
+        <input id="bet" name="bet" inputmode="decimal" value="{{ last_bet if last_bet is not none else '' }}" required>
+      </div>
+      <div>
+        <label for="win">Win</label>
+        <input id="win" name="win" inputmode="decimal" required>
+      </div>
+    </div>
+
+    <div class="readout" id="mult">—</div>
+
+    <div class="row">
+      <div>
+        <label for="played_on">Date</label>
+        <input id="played_on" name="played_on" type="date" value="{{ today }}">
+      </div>
+      <div style="display:flex;align-items:end;">
+        <label style="display:flex;align-items:center;gap:8px;margin:0;">
+          <input type="checkbox" name="notable" style="width:auto;"> Notable hit
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label for="notes">Notes <span class="muted small">(optional)</span></label>
+      <input id="notes" name="notes" autocomplete="off">
+    </div>
+
+    <button class="btn block" type="submit">Add bonus</button>
+  </form>
+
+  <p class="muted small" style="text-align:center">
+    <a href="/log">View the log →</a>
+  </p>
+
+  <script>
+    (function () {
+      var bet = document.getElementById('bet');
+      var win = document.getElementById('win');
+      var out = document.getElementById('mult');
+      function update() {
+        var b = parseFloat(bet.value), w = parseFloat(win.value);
+        if (b > 0 && !isNaN(w) && w >= 0) {
+          out.textContent = (w / b).toFixed(2).replace(/\.?0+$/, '') + 'x';
+        } else {
+          out.textContent = '—';
+        }
+      }
+      bet.addEventListener('input', update);
+      win.addEventListener('input', update);
+      update();
+      // Ready for the next entry (also runs after each HTMX swap).
+      document.getElementById('game').focus();
+    })();
+  </script>
+</div>
+{% endblock %}

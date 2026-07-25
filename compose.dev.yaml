@@ -1,0 +1,25 @@
+# Local development only. This file is NEVER deployed.
+# The deployed stack is deploy/compose.yaml — see DEPLOY.md.
+
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_DB: slottracker
+      POSTGRES_USER: slottracker
+      POSTGRES_PASSWORD: devpassword
+      TZ: America/Chicago
+    ports:
+      # Loopback only. Do not bind 0.0.0.0 — the dev host sits on a flat LAN.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # PG18+ mounts the parent directory, not .../data
+      - slot-tracker-devdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slottracker -d slottracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  slot-tracker-devdata:

@@ -1,0 +1,83 @@
+{% extends layout %}
+{% from "_macros.html" import sortable %}
+{% set target = "#games-content" %}
+{% block title %}Games · Slot Tracker{% endblock %}
+{% block content %}
+<div id="games-content">
+  <h1>Game stats <span class="muted small">· {{ "{:,}".format(page.total) }} games</span></h1>
+
+  <datalist id="game-names">{% for n in names %}<option value="{{ n }}"></option>{% endfor %}</datalist>
+
+  <form class="card filters" method="get" action="/games"
+        hx-get="/games" hx-target="#games-content" hx-swap="outerHTML" hx-push-url="true">
+    <input type="hidden" name="sort" value="{{ sort.key }}">
+    <input type="hidden" name="dir" value="{{ sort.direction }}">
+    <div><label>Search games</label><input name="q" value="{{ filters.q }}" autocomplete="off" placeholder="Name contains…"></div>
+    <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn" type="submit">Search</button></div>
+  </form>
+
+  <details class="card">
+    <summary>Merge &amp; aliases <span class="muted small">· fix duplicate spellings</span></summary>
+
+    <form class="filters" method="post" action="/games/merge"
+          onsubmit="return confirm('Merge these games? The source is deleted and its bonuses move to the target.');">
+      <div><label>Merge this game</label><input name="source" list="game-names" autocomplete="off" required placeholder="duplicate / misspelling"></div>
+      <div><label>into this one</label><input name="target" list="game-names" autocomplete="off" required placeholder="correct name"></div>
+      <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn" type="submit">Merge</button></div>
+    </form>
+
+    <form class="filters" method="post" action="/games/alias">
+      <div><label>Add spelling</label><input name="alias" autocomplete="off" required placeholder="typo to auto-correct"></div>
+      <div><label>for game</label><input name="game" list="game-names" autocomplete="off" required placeholder="correct name"></div>
+      <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn secondary" type="submit">Add alias</button></div>
+    </form>
+
+    <p class="muted small">Merging fixes live data and future entry. A full re-import still uses the code alias map — add permanent fixes to <code>app/importer/aliases.py</code> too.</p>
+  </details>
+
+  {% if page.rows %}
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          {{ sortable("game", "Game", sort, sort_url, target=target) }}
+          {{ sortable("count", "Bonuses", sort, sort_url, num=True, target=target) }}
+          {{ sortable("won", "Won", sort, sort_url, num=True, target=target) }}
+          {{ sortable("mean", "Mean X", sort, sort_url, num=True, target=target) }}
+          {{ sortable("best", "Best X", sort, sort_url, num=True, target=target) }}
+          {{ sortable("worst", "Worst X", sort, sort_url, num=True, target=target) }}
+          {{ sortable("first", "First", sort, sort_url, target=target) }}
+          {{ sortable("last", "Last", sort, sort_url, target=target) }}
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in page.rows %}
+        <tr>
+          <td><a href="/games/{{ g.id }}">{{ g.name }}</a></td>
+          <td class="num">{{ "{:,}".format(g.count) }}</td>
+          <td class="num">{{ g.total_win|money }}</td>
+          <td class="num">{{ g.mean_multiplier|multiplier }}</td>
+          <td class="num">{{ g.best_multiplier|multiplier }}</td>
+          <td class="num">{{ g.worst_multiplier|multiplier }}</td>
+          <td>{{ g.first_played|local_date }}</td>
+          <td>{{ g.last_played|local_date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="row" style="justify-content:space-between;align-items:center;">
+    {% if prev_url %}
+      <a class="btn secondary" href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#games-content" hx-swap="outerHTML" hx-push-url="true">← Prev</a>
+    {% else %}<span></span>{% endif %}
+    <span class="muted small">{{ page.offset + 1 }}–{{ page.offset + page.rows|length }} of {{ "{:,}".format(page.total) }}</span>
+    {% if next_url %}
+      <a class="btn secondary" href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#games-content" hx-swap="outerHTML" hx-push-url="true">Next →</a>
+    {% else %}<span></span>{% endif %}
+  </div>
+  {% else %}
+  <div class="card empty">No games match that search.</div>
+  {% endif %}
+</div>
+{% endblock %}

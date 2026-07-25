@@ -1,0 +1,48 @@
+{% extends layout %}
+{% from "_macros.html" import sortable %}
+{% block title %}Hunts · Slot Tracker{% endblock %}
+{% block content %}
+<h1>Bonus hunts</h1>
+
+<form class="card filters" method="post" action="/hunts">
+  <div><label>Label <span class="muted small">(optional)</span></label><input name="label" autocomplete="off"></div>
+  <div><label>Start balance</label><input name="start_balance" inputmode="decimal"></div>
+  <div><label>Date</label><input type="date" name="hunt_date"></div>
+  <div style="flex:0 0 auto;display:flex;align-items:end;"><button class="btn" type="submit">Open hunt</button></div>
+</form>
+
+{% if hunts %}
+<div class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        {{ sortable("hunt", "Hunt", sort, sort_url) }}
+        {{ sortable("date", "Date", sort, sort_url) }}
+        {{ sortable("status", "Status", sort, sort_url) }}
+        {{ sortable("bonuses", "Bonuses", sort, sort_url, num=True) }}
+        {{ sortable("won", "Won", sort, sort_url, num=True) }}
+        {{ sortable("cost", "Cost", sort, sort_url, num=True) }}
+        {{ sortable("net", "Net", sort, sort_url, num=True) }}
+        {{ sortable("roi", "ROI", sort, sort_url, num=True) }}
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in hunts %}
+      <tr>
+        <td><a href="/hunts/{{ v.hunt.id }}">{{ v.hunt.label or ("Hunt " ~ v.hunt.id) }}</a></td>
+        <td>{{ v.hunt.hunt_date|local_date }}</td>
+        <td><span class="badge {{ v.hunt.status }}">{{ v.hunt.status }}</span></td>
+        <td class="num">{{ v.bonus_count }}</td>
+        <td class="num">{{ v.total_win|money }}</td>
+        <td class="num">{{ v.result.cost|money }}</td>
+        <td class="num {% if v.result.net is not none and v.result.net < 0 %}neg{% elif v.result.net is not none %}pos{% endif %}">{{ v.result.net|signed_money }}</td>
+        <td class="num">{% if v.result.roi is not none %}{{ '%.1f'|format(v.result.roi * 100) }}%{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card empty">No hunts yet. Open one above.</div>
+{% endif %}
+{% endblock %}

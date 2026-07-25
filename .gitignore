@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# Environment-specific operational notes — hostnames, IPs, node names, infra
+# tooling. Keep private; DEPLOY.md is the generic public guide.
+*.local.md
+
+# Source workbooks — personal data, never commit
+*.ods
+*.xlsx
+*.xls
+*.csv
+data/
+
+# Editor
+.vscode/
+.idea/
+
+# LibreOffice lock files (e.g. .~lock.Slots.ods#)
+.~lock.*#

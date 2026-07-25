@@ -1,0 +1,69 @@
+{% extends layout %}
+{% block title %}{{ d.stat.name }} · Slot Tracker{% endblock %}
+{% block content %}
+<p class="small"><a href="/games">← All games</a></p>
+<h1>{{ d.stat.name }}</h1>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Bonuses</div><div class="v">{{ "{:,}".format(d.stat.count) }}</div></div>
+  <div class="tile"><div class="k">Total won</div><div class="v">{{ d.stat.total_win|money }}</div></div>
+  <div class="tile"><div class="k">Mean X</div><div class="v">{{ d.stat.mean_multiplier|multiplier }}</div></div>
+  <div class="tile"><div class="k">Best X</div><div class="v">{{ d.stat.best_multiplier|multiplier }}</div></div>
+  <div class="tile"><div class="k">Worst X</div><div class="v">{{ d.stat.worst_multiplier|multiplier }}</div></div>
+</div>
+<p class="muted small">
+  First played {{ d.stat.first_played|local_date }} · last played {{ d.stat.last_played|local_date }}
+  · <a href="/log?q={{ d.stat.name|urlencode }}">see all in the log →</a>
+</p>
+
+{% if d.aliases %}
+<div class="card">
+  <h2>Aliases <span class="muted small">· auto-corrected on entry</span></h2>
+  <p class="small">{% for a in d.aliases %}<span class="badge closed">{{ a }}</span> {% endfor %}</p>
+</div>
+{% endif %}
+
+{% if d.top_hits %}
+<div class="card table-wrap">
+  <h2>Best hits</h2>
+  <table>
+    <thead><tr><th>Date</th><th class="num">Bet</th><th class="num">Win</th><th class="num">X</th><th></th><th></th></tr></thead>
+    <tbody>
+      {% for b in d.top_hits %}
+      <tr>
+        <td>{{ b.played_on|local_date }}{% if b.notable %} <span class="badge notable" title="notable hit">★</span>{% endif %}</td>
+        <td class="num">{{ b.bet|money }}</td>
+        <td class="num">{{ b.win|money }}</td>
+        <td class="num">{{ b.multiplier|multiplier }}</td>
+        <td>{% if b.replay_url %}<a href="{{ b.replay_url }}" target="_blank" rel="noopener">▶</a>{% endif %}</td>
+        <td><a href="/bonus/{{ b.id }}/edit" title="edit" aria-label="edit bonus">✎</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if d.recent %}
+<div class="card table-wrap">
+  <h2>Recent</h2>
+  <table>
+    <thead><tr><th>Date</th><th class="num">Bet</th><th class="num">Win</th><th class="num">X</th><th>Notes</th><th></th></tr></thead>
+    <tbody>
+      {% for b in d.recent %}
+      <tr>
+        <td>{{ b.played_on|local_date }}</td>
+        <td class="num">{{ b.bet|money }}</td>
+        <td class="num">{{ b.win|money }}</td>
+        <td class="num">{{ b.multiplier|multiplier }}</td>
+        <td class="notes" title="{{ b.notes or '' }}">{{ b.notes or "" }}</td>
+        <td><a href="/bonus/{{ b.id }}/edit" title="edit" aria-label="edit bonus">✎</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% elif not d.top_hits %}
+<div class="card empty">No bonuses recorded for this game yet.</div>
+{% endif %}
+{% endblock %}
