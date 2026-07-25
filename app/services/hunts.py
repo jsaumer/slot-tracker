@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.models import Bonus, Hunt
@@ -153,6 +153,55 @@ def open_hunt(
     session.add(hunt)
     session.flush()
     return hunt
+
+
+def update_hunt(
+    session: Session,
+    hunt_id: int,
+    *,
+    label: str | None,
+    hunt_date: date | None,
+    start_balance: Decimal | None,
+    end_balance: Decimal | None,
+    end_convention: str,
+    status: str,
+    notes: str | None = None,
+) -> Hunt | None:
+    """Edit any field of a hunt, including reopening a closed one.
+
+    Without this, closing was effectively irreversible: the close form only
+    renders while a hunt is open, so a mistyped end balance was permanent and
+    left the hunt showing no result.
+    """
+    hunt = session.get(Hunt, hunt_id)
+    if hunt is None:
+        return None
+    hunt.label = label or None
+    hunt.hunt_date = hunt_date
+    hunt.start_balance = start_balance
+    hunt.end_balance = end_balance
+    hunt.end_convention = end_convention
+    hunt.status = status
+    hunt.notes = notes or None
+    session.flush()
+    return hunt
+
+
+def delete_hunt(session: Session, hunt_id: int) -> bool:
+    """Delete a hunt, detaching its bonuses first.
+
+    The bonuses survive as ordinary log rows: deleting a hunt is a statement
+    about the grouping, not about the play that happened. Detaching explicitly
+    (rather than relying on ``ON DELETE SET NULL``) keeps behaviour identical on
+    PostgreSQL and on the SQLite test database.
+    """
+    hunt = session.get(Hunt, hunt_id)
+    if hunt is None:
+        return False
+    session.execute(update(Bonus).where(Bonus.hunt_id == hunt_id).values(hunt_id=None))
+    session.execute(delete(Hunt).where(Hunt.id == hunt_id))
+    session.flush()
+    return True
 
 
 def close_hunt(

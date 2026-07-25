@@ -1,0 +1,68 @@
+{% extends layout %}
+{% block title %}Edit {{ hunt.label or ("Hunt " ~ hunt.id) }} · Slot Tracker{% endblock %}
+{% block content %}
+<p class="small"><a href="/hunts/{{ hunt.id }}">← Back to hunt</a></p>
+<h1>Edit {{ hunt.label or ("Hunt " ~ hunt.id) }}</h1>
+
+<form class="stack card" method="post" action="/hunts/{{ hunt.id }}">
+  <div>
+    <label for="label">Label <span class="muted small">(optional)</span></label>
+    <input id="label" name="label" autocomplete="off" value="{{ hunt.label or '' }}">
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="hunt_date">Date</label>
+      <input id="hunt_date" name="hunt_date" type="date"
+             value="{{ hunt.hunt_date.isoformat() if hunt.hunt_date else '' }}">
+    </div>
+    <div>
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        <option value="open" {% if hunt.status == 'open' %}selected{% endif %}>open</option>
+        <option value="closed" {% if hunt.status == 'closed' %}selected{% endif %}>closed</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="start_balance">Start balance</label>
+      <input id="start_balance" name="start_balance" inputmode="decimal"
+             value="{{ hunt.start_balance if hunt.start_balance is not none else '' }}">
+    </div>
+    <div>
+      <label for="end_balance">End balance</label>
+      <input id="end_balance" name="end_balance" inputmode="decimal"
+             value="{{ hunt.end_balance if hunt.end_balance is not none else '' }}">
+    </div>
+  </div>
+
+  <div>
+    <label for="end_convention">End convention</label>
+    <select id="end_convention" name="end_convention">
+      <option value="after_opening" {% if hunt.end_convention == 'after_opening' %}selected{% endif %}>after opening</option>
+      <option value="spin_end" {% if hunt.end_convention == 'spin_end' %}selected{% endif %}>spin end</option>
+    </select>
+    <p class="muted small" style="margin:6px 0 0">
+      <em>after opening</em>: end balance is measured once every bonus was opened, so cost is the start
+      balance. <em>spin end</em>: end balance is measured when hunting stopped, before opening, so cost
+      is start minus end.
+    </p>
+  </div>
+
+  <div>
+    <label for="notes">Notes <span class="muted small">(optional)</span></label>
+    <input id="notes" name="notes" autocomplete="off" value="{{ hunt.notes or '' }}">
+  </div>
+
+  <button class="btn block" type="submit">Save changes</button>
+</form>
+
+<form class="stack" method="post" action="/hunts/{{ hunt.id }}/delete"
+      onsubmit="return confirm('Delete this hunt? Its bonuses are kept and become ordinary log entries.');">
+  <button class="btn secondary block" type="submit"
+          style="color:var(--danger);border-color:var(--danger)">Delete hunt</button>
+</form>
+<p class="muted small" style="text-align:center">Deleting a hunt keeps its bonuses — they stay in the log, just unattached.</p>
+{% endblock %}

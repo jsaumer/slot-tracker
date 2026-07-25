@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.db import get_session
-from app.routers.params import parse_date, parse_decimal
+from app.routers.params import log_filters, parse_date, parse_decimal
 from app.services import bonuses as bonus_svc
 from app.services.bands import BANDS
 from app.services.games import all_game_names
@@ -40,9 +40,12 @@ def add_form(request: Request, session: Session = Depends(get_session)):
 def add_bonus(
     request: Request,
     session: Session = Depends(get_session),
-    game: str = Form(...),
-    bet: str = Form(...),
-    win: str = Form(...),
+    # Defaulted rather than Form(...) on purpose: an empty value for a required
+    # field never reaches the handler, so FastAPI answers with raw JSON instead of
+    # the rendered error below. The handler validates everything itself.
+    game: str = Form(""),
+    bet: str = Form(""),
+    win: str = Form(""),
     played_on: str = Form(""),
     notes: str = Form(""),
     notable: bool = Form(False),
@@ -93,9 +96,9 @@ def update_bonus(
     request: Request,
     bonus_id: int,
     session: Session = Depends(get_session),
-    game: str = Form(...),
-    bet: str = Form(...),
-    win: str = Form(...),
+    game: str = Form(""),
+    bet: str = Form(""),
+    win: str = Form(""),
     played_on: str = Form(""),
     notes: str = Form(""),
     replay_url: str = Form(""),
@@ -167,14 +170,16 @@ def log(
     )
     page = bonus_svc.query_log(
         session,
-        q=q or None,
-        date_from=parse_date(date_from),
-        date_to=parse_date(date_to),
-        bet=parse_decimal(bet, places=4),
-        band=band or None,
-        notable=notable,
-        suspect=suspect,
-        has_replay=has_replay,
+        filters=log_filters(
+            q=q,
+            date_from=date_from,
+            date_to=date_to,
+            bet=bet,
+            band=band,
+            notable=notable,
+            suspect=suspect,
+            has_replay=has_replay,
+        ),
         sort=active_sort,
         limit=50,
         offset=max(offset, 0),
@@ -194,6 +199,8 @@ def log(
         "bands": BANDS,
         "filters": filters,
         "sort": active_sort,
+        # Export what is on screen, not the whole table.
+        "export_url": query_url("/export", filters),
         # A header click resets to page 1; paging preserves the active sort.
         "sort_url": lambda key: _log_url(filters, 0, key, active_sort.next_direction(key)),
         "prev_url": _log_url(

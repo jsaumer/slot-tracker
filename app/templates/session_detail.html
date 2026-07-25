@@ -54,7 +54,8 @@
         <td class="num">{{ bonus.bet|money }}</td>
         <td class="num">{{ bonus.win|money }}</td>
         <td class="num">{{ bonus.multiplier|multiplier }}</td>
-        <td>
+        <td style="display:flex;gap:10px;align-items:center;">
+          <a href="/bonus/{{ bonus.id }}/edit" title="edit" aria-label="edit bonus">✎</a>
           <form method="post" action="/sessions/{{ ps.id }}/detach" style="margin:0">
             <input type="hidden" name="bonus_id" value="{{ bonus.id }}">
             <button type="submit" title="detach"

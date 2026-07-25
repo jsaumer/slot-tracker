@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from app.services.bonuses import create_bonus, query_log
+from app.services.bonuses import LogFilters, create_bonus, query_log
 from app.services.sorting import Sort
 from tests.support import make_sessionmaker
 
@@ -48,7 +48,7 @@ def test_search_matches_game_name() -> None:
     Session = make_sessionmaker()
     with Session() as s:
         _seed(s)
-        assert _games(query_log(s, q="bass")) == ["Big Bass"]
+        assert _games(query_log(s, filters=LogFilters(q="bass"))) == ["Big Bass"]
 
 
 def test_search_also_matches_notes() -> None:
@@ -56,16 +56,16 @@ def test_search_also_matches_notes() -> None:
     with Session() as s:
         _seed(s)
         # "retrigger" appears only in a notes field, never in a game name.
-        assert _games(query_log(s, q="retrigger")) == ["Gates of Olympus"]
+        assert _games(query_log(s, filters=LogFilters(q="retrigger"))) == ["Gates of Olympus"]
 
 
 def test_notable_replay_and_suspect_filters() -> None:
     Session = make_sessionmaker()
     with Session() as s:
         _seed(s)
-        assert _games(query_log(s, notable=True)) == ["Sugar Rush"]
-        assert _games(query_log(s, has_replay=True)) == ["Sugar Rush"]
-        assert _games(query_log(s, suspect=True)) == ["Gates of Olympus"]
+        assert _games(query_log(s, filters=LogFilters(notable=True))) == ["Sugar Rush"]
+        assert _games(query_log(s, filters=LogFilters(has_replay=True))) == ["Sugar Rush"]
+        assert _games(query_log(s, filters=LogFilters(suspect=True))) == ["Gates of Olympus"]
 
 
 def test_summary_aggregates_the_whole_filtered_set() -> None:
@@ -79,7 +79,7 @@ def test_summary_aggregates_the_whole_filtered_set() -> None:
         assert unfiltered.best_multiplier == Decimal("500")  # 100.00 / 0.20
 
         # Summary follows the filter, not the page.
-        filtered = query_log(s, notable=True).summary
+        filtered = query_log(s, filters=LogFilters(notable=True)).summary
         assert filtered.count == 1
         assert filtered.total_win == Decimal("100.00")
 
@@ -88,7 +88,7 @@ def test_summary_is_empty_safe() -> None:
     Session = make_sessionmaker()
     with Session() as s:
         _seed(s)
-        summary = query_log(s, q="no-such-game").summary
+        summary = query_log(s, filters=LogFilters(q="no-such-game")).summary
         assert summary.count == 0
         assert summary.total_win == Decimal(0)
         assert summary.mean_multiplier is None

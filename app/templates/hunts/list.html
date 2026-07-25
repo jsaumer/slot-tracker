@@ -2,7 +2,9 @@
 {% from "_macros.html" import sortable %}
 {% block title %}Hunts · Slot Tracker{% endblock %}
 {% block content %}
-<h1>Bonus hunts</h1>
+<h1>Bonus hunts
+  <a class="small" href="/export/hunts" style="font-weight:400">export CSV</a>
+</h1>
 
 <form class="card filters" method="post" action="/hunts">
   <div><label>Label <span class="muted small">(optional)</span></label><input name="label" autocomplete="off"></div>

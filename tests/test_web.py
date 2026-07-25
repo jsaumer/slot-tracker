@@ -109,12 +109,17 @@ def test_add_bonus_inserts_and_flashes(client: TestClient) -> None:
 
 
 def test_add_bonus_rejects_bad_input(client: TestClient) -> None:
+    """Asserts the *rendered* error, not just the status. Checking only the code
+    passed even when FastAPI rejected the request itself and the handler never
+    ran, which hid the raw-JSON response the user would have seen."""
     resp = client.post(
         "/bonus",
         data={"game": "", "bet": "0", "win": "-5"},
         headers={"HX-Request": "true"},
     )
     assert resp.status_code == 422
+    assert "Enter a game" in resp.text
+    assert "text/html" in resp.headers["content-type"]
 
 
 def test_log_filters_by_game(client: TestClient) -> None:
@@ -229,6 +234,52 @@ def test_log_shows_filtered_summary(client: TestClient) -> None:
     resp = client.get("/log")
     assert "bonuses" in resp.text
     assert "won" in resp.text
+
+
+def test_hunt_edit_page_renders_and_updates(client: TestClient) -> None:
+    assert client.get("/hunts/1/edit").status_code == 200
+    resp = client.post(
+        "/hunts/1",
+        data={
+            "label": "Renamed Hunt",
+            "hunt_date": "2024-03-01",
+            "start_balance": "500",
+            "end_balance": "700",
+            "end_convention": "after_opening",
+            "status": "open",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code == 303
+    assert "Renamed Hunt" in client.get("/hunts/1").text
+
+
+def test_hunt_edit_unknown_404(client: TestClient) -> None:
+    assert client.get("/hunts/9999/edit").status_code == 404
+
+
+def test_hunt_add_bonus_reports_errors_instead_of_redirecting(client: TestClient) -> None:
+    resp = client.post(
+        "/hunts/1/bonus",
+        data={"game": "", "bet": "0", "win": "-1"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 422
+    assert "Enter a game" in resp.text
+
+
+def test_export_respects_filters(client: TestClient) -> None:
+    everything = client.get("/export").text.splitlines()
+    filtered = client.get("/export", params={"q": "Fruitz"}).text.splitlines()
+    assert len(filtered) < len(everything)
+    assert all("Fruitz" in line for line in filtered[1:])
+
+
+@pytest.mark.parametrize("path", ["/export/hunts", "/export/sessions"])
+def test_extra_exports_are_csv(client: TestClient, path: str) -> None:
+    resp = client.get(path)
+    assert resp.status_code == 200
+    assert "text/csv" in resp.headers["content-type"]
 
 
 def test_games_merge_redirects(client: TestClient) -> None:
